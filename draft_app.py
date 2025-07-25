@@ -14,6 +14,13 @@ import streamlit as st
 
 st.set_page_config(page_title="Draft Simulator: AI Logic Version", layout="wide")
 
+st.markdown("""
+    <style>
+        .block-container { padding-top: 2rem !important; }
+        .ag-root-wrapper { min-height: 200px; }
+    </style>
+""", unsafe_allow_html=True)
+
 def can_draft(manager, row, round_num):
     pos = row["Position"]
     roster = st.session_state.rosters.get(manager, {"QB":0, "RB":0, "WR":0, "TE":0})
