@@ -660,7 +660,6 @@ def initialize_state(draft_order, pool):
     st.session_state.sim_step = 0
     st.session_state.manager_drafted_players = {}
 
-st.set_page_config(page_title="Draft Simulator: AI Logic Version", layout="wide")
 st.title("Draft Simulator: AI Logic Version")
 
 draft_order, pool, manager_profiles = load_data()
