@@ -1,4 +1,4 @@
-streamlit
+streamlit==1.28.2
 pandas
 numpy
-git+https://github.com/PablocFonseca/streamlit-aggrid.git
+streamlit-aggrid==0.3.4
