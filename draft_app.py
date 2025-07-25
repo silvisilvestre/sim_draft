@@ -700,8 +700,8 @@ if "sim_step" not in st.session_state:
     st.session_state.sim_step = 0
 
 st.header("Draft Board")
-board_container = st.container()
-with board_container:
+board_space = st.empty()  # Reserve space for the board
+with board_space:
     df_draft = pd.DataFrame(st.session_state.draft_results)
     if not df_draft.empty:
         if "Overall Pick" not in df_draft.columns:
@@ -715,7 +715,7 @@ with board_container:
         for col in ["Stars", "Rating", "ADP"]:
             if col in df_board.columns:
                 df_board[col] = pd.to_numeric(df_board[col], errors="coerce")
-        # Add a vertical space before AgGrid to help with rendering
+        # This spacer helps prevent layout collapse
         st.markdown('<div style="height:24px;"></div>', unsafe_allow_html=True)
         gb = GridOptionsBuilder.from_dataframe(df_board)
         gb.configure_selection('single', use_checkbox=True)
