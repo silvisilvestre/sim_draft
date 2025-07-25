@@ -727,6 +727,11 @@ with main_col:
         height=600,
         theme="streamlit"
     )
+    st.markdown("""
+    <script>
+    window.dispatchEvent(new Event('resize'));
+    </script>
+""", unsafe_allow_html=True)
     if not df_board.empty:
         selected_pick = get_selected_row(grid_response)
         if selected_pick:
@@ -760,6 +765,11 @@ with main_col:
             height=400,
             theme="streamlit"
         )
+        st.markdown("""
+    <script>
+    window.dispatchEvent(new Event('resize'));
+    </script>
+""", unsafe_allow_html=True)
         selected_row = get_selected_row(grid_response_pool)
         if selected_row:
             st.write(f"Selected: **{selected_row['Player']} ({selected_row['Position']})**")
