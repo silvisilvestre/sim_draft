@@ -10,6 +10,9 @@ import random
 import os
 import time
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+import streamlit as st
+
+st.set_page_config(page_title="Draft Simulator: AI Logic Version", layout="wide")
 
 def can_draft(manager, row, round_num):
     pos = row["Position"]
