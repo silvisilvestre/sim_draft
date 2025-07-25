@@ -700,43 +700,74 @@ if "sim_step" not in st.session_state:
     st.session_state.sim_step = 0
 
 st.header("Draft Board")
-board_space = st.empty()  # Reserve space for the board
-with board_space:
-    df_draft = pd.DataFrame(st.session_state.draft_results)
-    if not df_draft.empty:
-        if "Overall Pick" not in df_draft.columns:
-            df_draft = df_draft.merge(
-                draft_order[["Round", "Manager", "Overall Pick"]],
-                how="left", on=["Round", "Manager"]
-            )
-        board_cols = ["Round", "Overall Pick", "Manager", "Player", "Position", "College", "PickType", "Stars", "Rating", "ADP", "Explanation"]
-        df_board = df_draft[board_cols].copy()
-        df_board = df_board.iloc[::-1].reset_index(drop=True)
-        for col in ["Stars", "Rating", "ADP"]:
-            if col in df_board.columns:
-                df_board[col] = pd.to_numeric(df_board[col], errors="coerce")
-        # This spacer helps prevent layout collapse
-        st.markdown('<div style="height:24px;"></div>', unsafe_allow_html=True)
-        gb = GridOptionsBuilder.from_dataframe(df_board)
-        gb.configure_selection('single', use_checkbox=True)
-        gb.configure_default_column(filterable=True, sortable=True, resizable=True)
-        gridOptions = gb.build()
-        grid_response = AgGrid(
-            df_board,
-            gridOptions=gridOptions,
-            update_mode=GridUpdateMode.SELECTION_CHANGED,
-            allow_unsafe_jscode=False,
-            fit_columns_on_grid_load=True,
-            enable_enterprise_modules=False,
-            height=600,
-            theme="streamlit"
-        )
+
+# Use a wide main column for both the board and user pool
+main_col, _ = st.columns([7, 1])  # main_col gets ~87%, _ is dummy for sidebar space
+
+with main_col:
+    # --- Draft Board ---
+    board_cols = ["Round", "Overall Pick", "Manager", "Player", "Position", "College", "PickType", "Stars", "Rating", "ADP", "Explanation"]
+    df_board = pd.DataFrame(st.session_state.draft_results, columns=board_cols)
+    df_board = df_board.iloc[::-1].reset_index(drop=True) if not df_board.empty else pd.DataFrame(columns=board_cols)
+    for col in ["Stars", "Rating", "ADP"]:
+        if col in df_board.columns:
+            df_board[col] = pd.to_numeric(df_board[col], errors="coerce")
+    # Show AgGrid for the draft board
+    gb = GridOptionsBuilder.from_dataframe(df_board)
+    gb.configure_selection('single', use_checkbox=True)
+    gb.configure_default_column(filterable=True, sortable=True, resizable=True)
+    gridOptions = gb.build()
+    grid_response = AgGrid(
+        df_board,
+        gridOptions=gridOptions,
+        update_mode=GridUpdateMode.SELECTION_CHANGED,
+        allow_unsafe_jscode=False,
+        fit_columns_on_grid_load=True,
+        enable_enterprise_modules=False,
+        height=600,
+        theme="streamlit"
+    )
+    if not df_board.empty:
         selected_pick = get_selected_row(grid_response)
         if selected_pick:
             st.subheader(f"Explanation for {selected_pick['Player']}:")
             st.text_area("Explanation", selected_pick['Explanation'], height=120)
     else:
         st.info("Draft results will appear here as the draft progresses.")
+
+    # --- User Player Pool ---
+    # Make sure manager is defined as before
+    if 'manager' in locals() and manager == st.session_state.your_team:
+        st.subheader("Your Player Pool")
+        show_cols = ["Player", "Position", "College", "PickType", "Stars", "Rating", "ADP", "NormPlayer"]
+        available = pool[~pool["NormPlayer"].isin(st.session_state.drafted)].copy()
+        for col in ["Stars", "Rating", "ADP"]:
+            if col in available.columns:
+                available[col] = pd.to_numeric(available[col], errors="coerce")
+        available = available.sort_values("ADP", ascending=True)
+        gb_pool = GridOptionsBuilder.from_dataframe(available[show_cols])
+        gb_pool.configure_selection('single', use_checkbox=True)
+        gb_pool.configure_default_column(filterable=True, sortable=True, resizable=True)
+        gb_pool.configure_column("NormPlayer", hide=True)
+        gridOptions_pool = gb_pool.build()
+        grid_response_pool = AgGrid(
+            available[show_cols],
+            gridOptions=gridOptions_pool,
+            update_mode=GridUpdateMode.SELECTION_CHANGED,
+            allow_unsafe_jscode=False,
+            fit_columns_on_grid_load=True,
+            enable_enterprise_modules=False,
+            height=400,
+            theme="streamlit"
+        )
+        selected_row = get_selected_row(grid_response_pool)
+        if selected_row:
+            st.write(f"Selected: **{selected_row['Player']} ({selected_row['Position']})**")
+        draft_button = st.button("Draft Selected Player", disabled=not selected_row)
+        if draft_button and selected_row:
+            # Your draft logic here
+            pass
+        st.info("Select a player row and click 'Draft Selected Player'.")
 
 if st.session_state.current_pick_idx < len(draft_order):
     pick_row = draft_order.iloc[st.session_state.current_pick_idx]
