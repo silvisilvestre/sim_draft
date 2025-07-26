@@ -847,133 +847,124 @@ if manager == st.session_state.your_team:
         for col in ["Stars", "Rating", "ADP"]:
             if col in available.columns:
                 available[col] = pd.to_numeric(available[col], errors="coerce")
-        available = available.sort_values("ADP", ascending=True)
+        available = available.sort_values("ADP", ascending=True).reset_index(drop=True)
         
         if not available.empty:
-            # Add instruction
-            st.info("💡 **Tip:** Click on a player row below to auto-select them, then click 'Draft Selected Player'")
+            # Create two tabs for different selection methods
+            tab1, tab2 = st.tabs(["🎯 Quick Select", "📋 Browse All"])
             
-            # Display the dataframe with click selection
-            event = st.dataframe(
-                available[show_cols],
-                use_container_width=True,
-                height=400,
-                hide_index=True,
-                on_select="rerun",
-                selection_mode="single-row",
-                column_config={
-                    "Player": st.column_config.TextColumn("Player", width=200),
-                    "Position": st.column_config.TextColumn("Pos", width=80),
-                    "College": st.column_config.TextColumn("College", width=150),
-                    "PickType": st.column_config.TextColumn("Type", width=100),
-                    "Stars": st.column_config.NumberColumn("★", width=60),
-                    "Rating": st.column_config.NumberColumn("Rating", width=80),
-                    "ADP": st.column_config.NumberColumn("ADP", width=80)
-                }
-            )
+            with tab1:
+                # Quick selection with buttons
+                st.info("Click on any player button below to draft them instantly")
+                
+                # Show top 10 players as buttons
+                top_players = available.head(10)
+                
+                for idx, row in top_players.iterrows():
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.write(f"**{row['Player']}** ({row['Position']}) - {row['College']} - ADP: {row.get('ADP', 'N/A')} - ⭐{row.get('Stars', 'N/A')}")
+                    with col2:
+                        if st.button(f"Draft", key=f"draft_quick_{idx}", type="secondary"):
+                            # Complete draft logic
+                            st.session_state.drafted.add(row["NormPlayer"])
+                            
+                            # Update roster for user
+                            pos = row["Position"]
+                            if manager not in st.session_state.rosters:
+                                st.session_state.rosters[manager] = {"QB":0, "RB":0, "WR":0, "TE":0}
+                            if pos in st.session_state.rosters[manager]:
+                                st.session_state.rosters[manager][pos] += 1
+                            
+                            # Update pick type counts
+                            if manager not in st.session_state.mgr_type_counts:
+                                st.session_state.mgr_type_counts[manager] = {"Freshman": 0, "RTC": 0, "Upside": 0}
+                            ptype = row["PickType"]
+                            if ptype not in st.session_state.mgr_type_counts[manager]:
+                                st.session_state.mgr_type_counts[manager][ptype] = 0
+                            st.session_state.mgr_type_counts[manager][ptype] += 1
+                            
+                            # Update manager drafted players
+                            if manager not in st.session_state.manager_drafted_players:
+                                st.session_state.manager_drafted_players[manager] = []
+                            st.session_state.manager_drafted_players[manager].append({
+                                "Player": row["Player"],
+                                "Position": row["Position"],
+                                "NormPlayer": row["NormPlayer"],
+                                "College": row["College"],
+                                "PickType": row.get("PickType", ""),
+                                "Stars": row.get("Stars", ""),
+                                "Rating": row.get("Rating", ""),
+                                "ADP": row.get("ADP", "")
+                            })
+                            
+                            # Add to draft results
+                            st.session_state.draft_results.append({
+                                "Round": round_num,
+                                "Manager": manager,
+                                "Overall Pick": overall_pick,
+                                "Player": row["Player"],
+                                "Position": row["Position"],
+                                "College": row["College"],
+                                "PickType": row["PickType"],
+                                "Stars": row.get("Stars", ""),
+                                "Rating": row.get("Rating", ""),
+                                "ADP": row.get("ADP", ""),
+                                "Explanation": "Manual pick."
+                            })
+                            
+                            # Move to next pick
+                            st.session_state.current_pick_idx += 1
+                            st.session_state.pick_number += 1
+                            st.rerun()
             
-            # Handle row selection
-            selected_row = None
-            if event.selection.rows:
-                selected_idx = list(event.selection.rows)[0]  # Get first selected row index
-                selected_row = available.iloc[selected_idx]
+            with tab2:
+                # Full player pool with dropdown selection
+                st.info("Browse all available players and use the dropdown to select")
                 
-                # Show selected player prominently
-                st.success(f"🎯 **SELECTED:** {selected_row['Player']} ({selected_row['Position']}) from {selected_row['College']} - ADP: {selected_row.get('ADP', 'N/A')}")
-                
-                # Large, prominent draft button
-                draft_button = st.button(
-                    f"🏈 DRAFT {selected_row['Player'].upper()}", 
-                    type="primary", 
+                # Display the full dataframe (read-only)
+                st.dataframe(
+                    available[show_cols],
                     use_container_width=True,
-                    help=f"Draft {selected_row['Player']} with your current pick"
+                    height=400,
+                    hide_index=True,
+                    column_config={
+                        "Player": st.column_config.TextColumn("Player", width=200),
+                        "Position": st.column_config.TextColumn("Pos", width=80),
+                        "College": st.column_config.TextColumn("College", width=150),
+                        "PickType": st.column_config.TextColumn("Type", width=100),
+                        "Stars": st.column_config.NumberColumn("★", width=60),
+                        "Rating": st.column_config.NumberColumn("Rating", width=80),
+                        "ADP": st.column_config.NumberColumn("ADP", width=80)
+                    }
                 )
                 
-                if draft_button:
-                    # Add to drafted set
-                    st.session_state.drafted.add(selected_row["NormPlayer"])
-                    
-                    # Update roster for user
-                    pos = selected_row["Position"]
-                    if manager not in st.session_state.rosters:
-                        st.session_state.rosters[manager] = {"QB":0, "RB":0, "WR":0, "TE":0}
-                    if pos in st.session_state.rosters[manager]:
-                        st.session_state.rosters[manager][pos] += 1
-                    
-                    # Update pick type counts
-                    if manager not in st.session_state.mgr_type_counts:
-                        st.session_state.mgr_type_counts[manager] = {"Freshman": 0, "RTC": 0, "Upside": 0}
-                    ptype = selected_row["PickType"]
-                    if ptype not in st.session_state.mgr_type_counts[manager]:
-                        st.session_state.mgr_type_counts[manager][ptype] = 0
-                    st.session_state.mgr_type_counts[manager][ptype] += 1
-                    
-                    # Update manager drafted players
-                    if manager not in st.session_state.manager_drafted_players:
-                        st.session_state.manager_drafted_players[manager] = []
-                    st.session_state.manager_drafted_players[manager].append({
-                        "Player": selected_row["Player"],
-                        "Position": selected_row["Position"],
-                        "NormPlayer": selected_row["NormPlayer"],
-                        "College": selected_row["College"],
-                        "PickType": selected_row.get("PickType", ""),
-                        "Stars": selected_row.get("Stars", ""),
-                        "Rating": selected_row.get("Rating", ""),
-                        "ADP": selected_row.get("ADP", "")
-                    })
-                    
-                    # Add to draft results
-                    st.session_state.draft_results.append({
-                        "Round": round_num,
-                        "Manager": manager,
-                        "Overall Pick": overall_pick,
-                        "Player": selected_row["Player"],
-                        "Position": selected_row["Position"],
-                        "College": selected_row["College"],
-                        "PickType": selected_row["PickType"],
-                        "Stars": selected_row.get("Stars", ""),
-                        "Rating": selected_row.get("Rating", ""),
-                        "ADP": selected_row.get("ADP", ""),
-                        "Explanation": "Manual pick."
-                    })
-                    
-                    # Move to next pick
-                    st.session_state.current_pick_idx += 1
-                    st.session_state.pick_number += 1
-                    st.rerun()
-            else:
-                # No row selected - show instruction
-                st.warning("👆 **Click on a player row above to select them for drafting**")
-                
-                # Optional: Keep the dropdown as backup
-                st.write("---")
-                st.write("**Alternative: Use dropdown selection**")
+                # Dropdown selection
+                st.write("**Select Player to Draft:**")
                 player_options = []
                 for idx, row in available.iterrows():
                     display_text = f"{row['Player']} ({row['Position']}) - {row['College']} - ADP: {row.get('ADP', 'N/A')}"
                     player_options.append((idx, display_text, row))
                 
                 selected_player_idx = st.selectbox(
-                    "Or choose from dropdown:",
+                    "Choose a player:",
                     options=range(len(player_options)),
                     format_func=lambda x: player_options[x][1],
-                    key="player_selection_dropdown"
+                    key="player_selection_tab2"
                 )
                 
                 if selected_player_idx is not None:
-                    dropdown_selected_row = player_options[selected_player_idx][2]
+                    selected_row = player_options[selected_player_idx][2]
+                    st.success(f"**Selected:** {selected_row['Player']} ({selected_row['Position']}) from {selected_row['College']}")
                     
-                    draft_button_dropdown = st.button(
-                        f"Draft {dropdown_selected_row['Player']}", 
-                        type="secondary"
-                    )
+                    draft_button = st.button("🏈 Draft Selected Player", type="primary", use_container_width=True)
                     
-                    if draft_button_dropdown:
-                        # Add to drafted set
-                        st.session_state.drafted.add(dropdown_selected_row["NormPlayer"])
+                    if draft_button:
+                        # Complete draft logic
+                        st.session_state.drafted.add(selected_row["NormPlayer"])
                         
                         # Update roster for user
-                        pos = dropdown_selected_row["Position"]
+                        pos = selected_row["Position"]
                         if manager not in st.session_state.rosters:
                             st.session_state.rosters[manager] = {"QB":0, "RB":0, "WR":0, "TE":0}
                         if pos in st.session_state.rosters[manager]:
@@ -982,7 +973,7 @@ if manager == st.session_state.your_team:
                         # Update pick type counts
                         if manager not in st.session_state.mgr_type_counts:
                             st.session_state.mgr_type_counts[manager] = {"Freshman": 0, "RTC": 0, "Upside": 0}
-                        ptype = dropdown_selected_row["PickType"]
+                        ptype = selected_row["PickType"]
                         if ptype not in st.session_state.mgr_type_counts[manager]:
                             st.session_state.mgr_type_counts[manager][ptype] = 0
                         st.session_state.mgr_type_counts[manager][ptype] += 1
@@ -991,14 +982,14 @@ if manager == st.session_state.your_team:
                         if manager not in st.session_state.manager_drafted_players:
                             st.session_state.manager_drafted_players[manager] = []
                         st.session_state.manager_drafted_players[manager].append({
-                            "Player": dropdown_selected_row["Player"],
-                            "Position": dropdown_selected_row["Position"],
-                            "NormPlayer": dropdown_selected_row["NormPlayer"],
-                            "College": dropdown_selected_row["College"],
-                            "PickType": dropdown_selected_row.get("PickType", ""),
-                            "Stars": dropdown_selected_row.get("Stars", ""),
-                            "Rating": dropdown_selected_row.get("Rating", ""),
-                            "ADP": dropdown_selected_row.get("ADP", "")
+                            "Player": selected_row["Player"],
+                            "Position": selected_row["Position"],
+                            "NormPlayer": selected_row["NormPlayer"],
+                            "College": selected_row["College"],
+                            "PickType": selected_row.get("PickType", ""),
+                            "Stars": selected_row.get("Stars", ""),
+                            "Rating": selected_row.get("Rating", ""),
+                            "ADP": selected_row.get("ADP", "")
                         })
                         
                         # Add to draft results
@@ -1006,13 +997,13 @@ if manager == st.session_state.your_team:
                             "Round": round_num,
                             "Manager": manager,
                             "Overall Pick": overall_pick,
-                            "Player": dropdown_selected_row["Player"],
-                            "Position": dropdown_selected_row["Position"],
-                            "College": dropdown_selected_row["College"],
-                            "PickType": dropdown_selected_row["PickType"],
-                            "Stars": dropdown_selected_row.get("Stars", ""),
-                            "Rating": dropdown_selected_row.get("Rating", ""),
-                            "ADP": dropdown_selected_row.get("ADP", ""),
+                            "Player": selected_row["Player"],
+                            "Position": selected_row["Position"],
+                            "College": selected_row["College"],
+                            "PickType": selected_row["PickType"],
+                            "Stars": selected_row.get("Stars", ""),
+                            "Rating": selected_row.get("Rating", ""),
+                            "ADP": selected_row.get("ADP", ""),
                             "Explanation": "Manual pick."
                         })
                         
