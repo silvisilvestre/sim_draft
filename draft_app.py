@@ -25,8 +25,33 @@ def generate_data_hash(data):
 
 st.markdown("""
     <style>
-        .block-container { padding-top: 2rem !important; }
-        .ag-root-wrapper { min-height: 200px; }
+        .block-container { 
+            padding-top: 2rem !important; 
+            max-width: 100% !important;
+        }
+        .ag-root-wrapper { 
+            min-height: 600px !important;
+            height: 600px !important;
+            width: 100% !important;
+        }
+        .ag-root {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        .ag-center-cols-container {
+            min-height: 500px !important;
+        }
+        .ag-header-row {
+            background-color: #f0f2f6 !important;
+        }
+        /* Force the grid to be visible immediately */
+        div[data-testid="stApp"] > div:first-child {
+            width: 100% !important;
+        }
+        .main .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
