@@ -758,16 +758,43 @@ with main_col:
     else:
         st.info("Draft results will appear here as the draft progresses.")
 
-    # --- User Player Pool ---
-    # Check if manager variable exists and it's the user's turn
-    if st.session_state.current_pick_idx < len(draft_order):
-        pick_row = draft_order.iloc[st.session_state.current_pick_idx]
-        current_manager = normalize_name(pick_row["Manager"])
+if st.session_state.current_pick_idx < len(draft_order):
+    pick_row = draft_order.iloc[st.session_state.current_pick_idx]
+    round_num = int(pick_row["Round"])
+    manager = normalize_name(pick_row["Manager"])
+    overall_pick = pick_row["Overall Pick"]
+
+    if manager == "":
+        st.session_state.draft_results.append({
+            "Round": round_num,
+            "Manager": "",
+            "Overall Pick": overall_pick,
+            "Player": "Pick Skipped",
+            "Position": "",
+            "College": "",
+            "PickType": "",
+            "Stars": "",
+            "Rating": "",
+            "ADP": "",
+            "Explanation": "Skipped pick (comp/empty in draft order)."
+        })
+        st.session_state.current_pick_idx += 1
+        st.session_state.pick_number += 1
+        st.rerun()
+
+    st.markdown(f"### On the clock: **{manager}** (Round {round_num})")
+
+    # --- USER PICK ---
+    if manager == st.session_state.your_team:
+        st.session_state.auto_drafting = False
         
-        if current_manager == st.session_state.your_team:
+        with main_col:
             st.subheader("Your Player Pool")
             show_cols = ["Player", "Position", "College", "PickType", "Stars", "Rating", "ADP", "NormPlayer"]
+            
+            # User picks: show ALL undrafted players, NO can_draft filtering!
             available = pool[~pool["NormPlayer"].isin(st.session_state.drafted)].copy()
+            
             for col in ["Stars", "Rating", "ADP"]:
                 if col in available.columns:
                     available[col] = pd.to_numeric(available[col], errors="coerce")
@@ -804,139 +831,20 @@ with main_col:
             selected_row = get_selected_row(grid_response_pool)
             if selected_row:
                 st.write(f"Selected: **{selected_row['Player']} ({selected_row['Position']})**")
+            
             draft_button = st.button("Draft Selected Player", disabled=not selected_row)
+            
             if draft_button and selected_row:
-                # User draft logic will be handled in the main flow below
-                pass
-            st.info("Select a player row and click 'Draft Selected Player'.")
-
-if st.session_state.current_pick_idx < len(draft_order):
-    pick_row = draft_order.iloc[st.session_state.current_pick_idx]
-    round_num = int(pick_row["Round"])
-    manager = normalize_name(pick_row["Manager"])
-    overall_pick = pick_row["Overall Pick"]
-
-    if manager == "":
-        st.session_state.draft_results.append({
-            "Round": round_num,
-            "Manager": "",
-            "Overall Pick": overall_pick,
-            "Player": "Pick Skipped",
-            "Position": "",
-            "College": "",
-            "PickType": "",
-            "Stars": "",
-            "Rating": "",
-            "ADP": "",
-            "Explanation": "Skipped pick (comp/empty in draft order)."
-        })
-        st.session_state.current_pick_idx += 1
-        st.session_state.pick_number += 1
-        st.rerun()
-
-    st.markdown(f"### On the clock: **{manager}** (Round {round_num})")
-
-# --- USER PICK ---
-if manager == st.session_state.your_team:
-    st.session_state.auto_drafting = False
-    
-    # Handle user draft button click
-    if 'draft_button' in locals() and draft_button and 'selected_row' in locals() and selected_row:
-        st.session_state.drafted.add(selected_row["NormPlayer"])
-        # update_roster for user
-        pos = selected_row["Position"]
-        if manager not in st.session_state.rosters:
-            st.session_state.rosters[manager] = {"QB":0, "RB":0, "WR":0, "TE":0}
-        if pos in st.session_state.rosters[manager]:
-            st.session_state.rosters[manager][pos] += 1
-        if manager not in st.session_state.mgr_type_counts:
-            st.session_state.mgr_type_counts[manager] = {"Freshman": 0, "RTC": 0, "Upside": 0}
-        ptype = selected_row["PickType"]
-        if ptype not in st.session_state.mgr_type_counts[manager]:
-            st.session_state.mgr_type_counts[manager][ptype] = 0
-        st.session_state.mgr_type_counts[manager][ptype] += 1
-        # for manager_drafted_players
-        if manager not in st.session_state.manager_drafted_players:
-            st.session_state.manager_drafted_players[manager] = []
-        st.session_state.manager_drafted_players[manager].append({
-            "Player": selected_row["Player"],
-            "Position": selected_row["Position"],
-            "NormPlayer": selected_row["NormPlayer"],
-            "College": selected_row["College"],
-            "PickType": selected_row.get("PickType", ""),
-            "Stars": selected_row.get("Stars", ""),
-            "Rating": selected_row.get("Rating", ""),
-            "ADP": selected_row.get("ADP", "")
-        })
-        st.session_state.draft_results.append({
-            "Round": round_num,
-            "Manager": manager,
-            "Overall Pick": overall_pick,
-            "Player": selected_row["Player"],
-            "Position": selected_row["Position"],
-            "College": selected_row["College"],
-            "PickType": selected_row["PickType"],
-            "Stars": selected_row.get("Stars", ""),
-            "Rating": selected_row.get("Rating", ""),
-            "ADP": selected_row.get("ADP", ""),
-            "Explanation": "Manual pick."
-        })
-        st.session_state.current_pick_idx += 1
-        st.session_state.pick_number += 1
-        st.rerun()
-
-# --- CPU PICKS: use simulation script logic ---
-else:
-    def simulate_next_pick(idx):
-        pick_row = draft_order.iloc[idx]
-        round_num = int(pick_row["Round"])
-        manager = normalize_name(pick_row["Manager"])
-        overall_pick = pick_row["Overall Pick"]
-        if manager == "":
-            st.session_state.draft_results.append({
-                "Round": round_num,
-                "Manager": "",
-                "Overall Pick": overall_pick,
-                "Player": "Pick Skipped",
-                "Position": "",
-                "College": "",
-                "PickType": "",
-                "Stars": "",
-                "Rating": "",
-                "ADP": "",
-                "Explanation": "Skipped pick (comp/empty in draft order)."
-            })
-            return True
-        available = pool[~pool["NormPlayer"].isin(st.session_state.drafted)].copy()
-        available = available[[can_draft(manager, row, round_num) for _, row in available.iterrows()]]
-        # Force Top 100 ADP for LA CHOSIA NCAA MTF at Round 1, Pick 5
-        if manager == "LA CHOSIA NCAA MTF" and round_num == 1 and idx == 4:
-            available = available[pd.to_numeric(available["ADP"], errors="coerce") <= 100]
-            available = available[available["ADP"].notnull()]
-        # Consensus Top 3 picks logic
-        if round_num == 1 and idx < 3:
-            remaining_top3 = [p for p in CONSENSUS_TOP3 if normalize_name(p) in available["NormPlayer"].tolist()]
-            if remaining_top3:
-                avail_top3 = available[available["NormPlayer"].isin([normalize_name(p) for p in remaining_top3])]
-                avail_top3 = avail_top3.copy()
-                pt_weights, pos_weights, col_weights, quota_fresh, quota_upside, quota_rtc, rtc_lock, profile, profile_type = get_manager_profile(manager)
-                avail_top3.loc[:, "pos_bias"] = avail_top3["Position"].map(lambda pos: pos_weights.get(pos, 0))
-                avail_top3.loc[:, "college_bias"] = avail_top3["NormCollege"].map(lambda col: col_weights.get(col, 0))
-                avail_top3.loc[:, "score"] = avail_top3["pos_bias"].fillna(0) * 0.08 + avail_top3["college_bias"].fillna(0) * 0.008 + \
-                    pd.to_numeric(avail_top3["Rating"], errors="coerce").fillna(0) * 1.0 + \
-                    pd.to_numeric(avail_top3["Stars"], errors="coerce").fillna(0) * 0.8
-                top_n = avail_top3.sort_values("score", ascending=False).head(5)
-                pick_row_out = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else avail_top3.iloc[0]
-                st.session_state.drafted.add(pick_row_out["NormPlayer"])
-                # update_roster for CPU
-                pos = pick_row_out["Position"]
+                st.session_state.drafted.add(selected_row["NormPlayer"])
+                # update_roster for user
+                pos = selected_row["Position"]
                 if manager not in st.session_state.rosters:
                     st.session_state.rosters[manager] = {"QB":0, "RB":0, "WR":0, "TE":0}
                 if pos in st.session_state.rosters[manager]:
                     st.session_state.rosters[manager][pos] += 1
                 if manager not in st.session_state.mgr_type_counts:
                     st.session_state.mgr_type_counts[manager] = {"Freshman": 0, "RTC": 0, "Upside": 0}
-                ptype = pick_row_out["PickType"]
+                ptype = selected_row["PickType"]
                 if ptype not in st.session_state.mgr_type_counts[manager]:
                     st.session_state.mgr_type_counts[manager][ptype] = 0
                 st.session_state.mgr_type_counts[manager][ptype] += 1
@@ -944,19 +852,112 @@ else:
                 if manager not in st.session_state.manager_drafted_players:
                     st.session_state.manager_drafted_players[manager] = []
                 st.session_state.manager_drafted_players[manager].append({
-                    "Player": pick_row_out["Player"],
-                    "Position": pick_row_out["Position"],
-                    "NormPlayer": pick_row_out["NormPlayer"],
-                    "College": pick_row_out["College"],
-                    "PickType": pick_row_out.get("PickType", ""),
-                    "Stars": pick_row_out.get("Stars", ""),
-                    "Rating": pick_row_out.get("Rating", ""),
-                    "ADP": pick_row_out.get("ADP", "")
+                    "Player": selected_row["Player"],
+                    "Position": selected_row["Position"],
+                    "NormPlayer": selected_row["NormPlayer"],
+                    "College": selected_row["College"],
+                    "PickType": selected_row.get("PickType", ""),
+                    "Stars": selected_row.get("Stars", ""),
+                    "Rating": selected_row.get("Rating", ""),
+                    "ADP": selected_row.get("ADP", "")
                 })
-                expl = human_explain_pick(
-                    manager, pick_row_out, round_num, profile_type, False, False,
-                    {"Freshman": 0, "Upside": 0, "RTC": 0},
-                    {"Freshman": 0, "Upside": 0, "RTC": 0},
-                    99, profile, "2025"
-                )
-                st.session_state
+                st.session_state.draft_results.append({
+                    "Round": round_num,
+                    "Manager": manager,
+                    "Overall Pick": overall_pick,
+                    "Player": selected_row["Player"],
+                    "Position": selected_row["Position"],
+                    "College": selected_row["College"],
+                    "PickType": selected_row["PickType"],
+                    "Stars": selected_row.get("Stars", ""),
+                    "Rating": selected_row.get("Rating", ""),
+                    "ADP": selected_row.get("ADP", ""),
+                    "Explanation": "Manual pick."
+                })
+                st.session_state.current_pick_idx += 1
+                st.session_state.pick_number += 1
+                st.rerun()
+            
+            st.info("Select a player row and click 'Draft Selected Player'.")
+
+    # --- CPU PICKS: use simulation script logic ---
+    else:
+        def simulate_next_pick(idx):
+            pick_row = draft_order.iloc[idx]
+            round_num = int(pick_row["Round"])
+            manager = normalize_name(pick_row["Manager"])
+            overall_pick = pick_row["Overall Pick"]
+            if manager == "":
+                st.session_state.draft_results.append({
+                    "Round": round_num,
+                    "Manager": "",
+                    "Overall Pick": overall_pick,
+                    "Player": "Pick Skipped",
+                    "Position": "",
+                    "College": "",
+                    "PickType": "",
+                    "Stars": "",
+                    "Rating": "",
+                    "ADP": "",
+                    "Explanation": "Skipped pick (comp/empty in draft order)."
+                })
+                return True
+            available = pool[~pool["NormPlayer"].isin(st.session_state.drafted)].copy()
+            available = available[[can_draft(manager, row, round_num) for _, row in available.iterrows()]]
+            # Force Top 100 ADP for LA CHOSIA NCAA MTF at Round 1, Pick 5
+            if manager == "LA CHOSIA NCAA MTF" and round_num == 1 and idx == 4:
+                available = available[pd.to_numeric(available["ADP"], errors="coerce") <= 100]
+                available = available[available["ADP"].notnull()]
+            # Consensus Top 3 picks logic
+            if round_num == 1 and idx < 3:
+                remaining_top3 = [p for p in CONSENSUS_TOP3 if normalize_name(p) in available["NormPlayer"].tolist()]
+                if remaining_top3:
+                    avail_top3 = available[available["NormPlayer"].isin([normalize_name(p) for p in remaining_top3])]
+                    avail_top3 = avail_top3.copy()
+                    pt_weights, pos_weights, col_weights, quota_fresh, quota_upside, quota_rtc, rtc_lock, profile, profile_type = get_manager_profile(manager)
+                    avail_top3.loc[:, "pos_bias"] = avail_top3["Position"].map(lambda pos: pos_weights.get(pos, 0))
+                    avail_top3.loc[:, "college_bias"] = avail_top3["NormCollege"].map(lambda col: col_weights.get(col, 0))
+                    avail_top3.loc[:, "score"] = avail_top3["pos_bias"].fillna(0) * 0.08 + avail_top3["college_bias"].fillna(0) * 0.008 + \
+                        pd.to_numeric(avail_top3["Rating"], errors="coerce").fillna(0) * 1.0 + \
+                        pd.to_numeric(avail_top3["Stars"], errors="coerce").fillna(0) * 0.8
+                    top_n = avail_top3.sort_values("score", ascending=False).head(5)
+                    pick_row_out = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else avail_top3.iloc[0]
+                    st.session_state.drafted.add(pick_row_out["NormPlayer"])
+                    # update_roster for CPU
+                    pos = pick_row_out["Position"]
+                    if manager not in st.session_state.rosters:
+                        st.session_state.rosters[manager] = {"QB":0, "RB":0, "WR":0, "TE":0}
+                    if pos in st.session_state.rosters[manager]:
+                        st.session_state.rosters[manager][pos] += 1
+                    if manager not in st.session_state.mgr_type_counts:
+                        st.session_state.mgr_type_counts[manager] = {"Freshman": 0, "RTC": 0, "Upside": 0}
+                    ptype = pick_row_out["PickType"]
+                    if ptype not in st.session_state.mgr_type_counts[manager]:
+                        st.session_state.mgr_type_counts[manager][ptype] = 0
+                    st.session_state.mgr_type_counts[manager][ptype] += 1
+                    # for manager_drafted_players
+                    if manager not in st.session_state.manager_drafted_players:
+                        st.session_state.manager_drafted_players[manager] = []
+                    st.session_state.manager_drafted_players[manager].append({
+                        "Player": pick_row_out["Player"],
+                        "Position": pick_row_out["Position"],
+                        "NormPlayer": pick_row_out["NormPlayer"],
+                        "College": pick_row_out["College"],
+                        "PickType": pick_row_out.get("PickType", ""),
+                        "Stars": pick_row_out.get("Stars", ""),
+                        "Rating": pick_row_out.get("Rating", ""),
+                        "ADP": pick_row_out.get("ADP", "")
+                    })
+                    expl = human_explain_pick(
+                        manager, pick_row_out, round_num, profile_type, False, False,
+                        {"Freshman": 0, "Upside": 0, "RTC": 0},
+                        {"Freshman": 0, "Upside": 0, "RTC": 0},
+                        99, profile, "2025"
+                    )
+                    st.session_state.draft_results.append({
+                        "Round": round_num,
+                        "Manager": manager,
+                        "Overall Pick": overall_pick,
+                        "Player": pick_row_out["Player"],
+                        "Position": pick_row_out["Position"],
+                        "College": pick_row
