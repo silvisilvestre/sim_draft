@@ -10,9 +10,7 @@ import random
 import os
 import time
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
-import streamlit as st
 import hashlib
-
 
 st.set_page_config(page_title="Draft Simulator: AI Logic Version", layout="wide")
 
@@ -322,7 +320,7 @@ def get_round_reference(profile, round_num, current_year, current_position, curr
         if last_any_year and last_any_year != last_year:
             return (
                 f" He takes a {current_position} in Round {round_num}, reverting to his {last_year} selection of {last_player}, "
-                f"after last year’s {last_any_pos} ({last_any_player}) pick."
+                f"after last year's {last_any_pos} ({last_any_player}) pick."
             )
         else:
             return (
@@ -376,12 +374,12 @@ def format_adp_phrase(adp, round_num=None):
 
 templates_freshman_heavy = [
     "True to form, {manager} leans on youth by selecting {player}, a {stars}-star freshman from {college} whose athletic spark suggests growth beyond his {adp_phrase}.",
-    "Even without top-tier hype, {player} fits {manager}’s rookie‑first approach: a {stars}-star newcomer with impact potential for round {round}.",
+    "Even without top-tier hype, {player} fits {manager}'s rookie‑first approach: a {stars}-star newcomer with impact potential for round {round}.",
     "{manager} doubles down on raw talent, grabbing {player}, a {stars}-star freshman whose upside could outpace expectations as the season unfolds.",
     "With the blue‑chip names gone, {manager} pivots to {player}, whose blend of athleticism and field vision outperforms his {adp_phrase}.",
     "Refusing to stray from a youth‑heavy strategy, {manager} takes {player}, a {stars}-star rookie whose projection promises long‑term ROI.",
-    "It’s a foundational pick for {manager}, who adds {player}, a high-motor, {stars}-star rookie whose developmental curve fits their long-term, freshman-focused strategy.",
-    "No surprise here. {manager} continues to build through the draft, grabbing {player}, a toolsy {stars}-star whose potential is valued more than a veteran’s floor.",
+    "It's a foundational pick for {manager}, who adds {player}, a high-motor, {stars}-star rookie whose developmental curve fits their long-term, freshman-focused strategy.",
+    "No surprise here. {manager} continues to build through the draft, grabbing {player}, a toolsy {stars}-star whose potential is valued more than a veteran's floor.",
     "This is a classic {manager} move: ignore the safe bet and invest in raw talent. {player} from {college} is a prototypical project pick for them in round {round}.",
     "Following the selection of {past_pick}, {manager} doubles down on the youth movement, adding {player}, a {stars}-star freshman poised to be a future building block.",
     "Chalk it up. {manager} goes back to the well for another high-upside freshman, grabbing {player} and betting that his traits will translate faster than the market expects.",
@@ -391,27 +389,27 @@ templates_freshman_heavy = [
 ]
 templates_freshman_mixed = [
     "Balancing veterans and prospects, {manager} adds {player}, a {stars}-star freshman from {college} whose versatility pairs well with established pieces.",
-    "In a hybrid maneuver, {manager} opts for {player}—a mid‑tier rookie whose growth potential won’t break the bank.",
-    "{player} isn’t a household name, but for a balanced roster, {manager} sees his {stars}-star ceiling and {adp_phrase} as ideal filler.",
+    "In a hybrid maneuver, {manager} opts for {player}—a mid‑tier rookie whose growth potential won't break the bank.",
+    "{player} isn't a household name, but for a balanced roster, {manager} sees his {stars}-star ceiling and {adp_phrase} as ideal filler.",
     "Seeking stability with a dash of upside, {manager} picks {player}, a freshman whose future role justifies the pick in round {round}.",
     "True to their mixed blueprint, {manager} secures {player}, a freshman with a solid base and room to grow—especially at {adp_phrase}.",
     "This is a portfolio pick for {manager}. {player} offers a dash of upside without forcing a full rebuild, complementing their hybrid roster construction.",
     "Seeking stability with a hint of upside, {manager} picks {player}, a {stars}-star freshman whose future role justifies the selection in round {round}.",
-    "{player} isn’t a headline-grabber, but for a balanced roster, {manager} sees his ceiling and reasonable {adp_phrase} as an ideal, low-risk investment.",
+    "{player} isn't a headline-grabber, but for a balanced roster, {manager} sees his ceiling and reasonable {adp_phrase} as an ideal, low-risk investment.",
     "With their core set, {manager} takes a shot on {player}. The {stars}-star rookie provides valuable depth and a potential future starter without disrupting the team's win-now focus.",
     "This selection is all about measured upside. {manager} eschews older players to add {player}, a freshman whose long-term potential could pay dividends.",
     "{manager} hedges their bets with {player}, a promising {stars}-star from {college} who can develop behind veterans and potentially emerge as a key contributor down the line.",
 ]
 templates_freshman_elite = [
     "When talent like {player}—a 5‑star from {college}—drops to the board, {manager} snaps him up, locking in franchise upside at {adp_phrase}.",
-    "Elite recruits don’t last: {manager} wastes no time drafting {player}, a 5‑star rookie primed for immediate impact.",
-    "This is a can’t‑miss pick: {player} offers size, skill, and college production, and {manager} seals the deal in round {round}.",
-    "Consensus agrees on {player}’s ceiling—5‑star status and proven tape—so {manager} adds him without hesitation.",
+    "Elite recruits don't last: {manager} wastes no time drafting {player}, a 5‑star rookie primed for immediate impact.",
+    "This is a can't‑miss pick: {player} offers size, skill, and college production, and {manager} seals the deal in round {round}.",
+    "Consensus agrees on {player}'s ceiling—5‑star status and proven tape—so {manager} adds him without hesitation.",
     "Franchise upside is on the table, so {manager} grabs {player}, a 5‑star talent whose projection smokes his {adp_phrase}.",
     "When talent like {player}—a 5-star from {college}—is on the board, you take him. {manager} snaps up a potential franchise cornerstone, locking in elite upside at {adp_phrase}.",
     "This is a no-brainer. {manager} wastes no time drafting {player}, a 5-star rookie primed for immediate, game-changing impact from day one.",
     "Sometimes the pick makes itself. {player} was the best player available by a mile, and {manager} wisely secures a blue-chip talent to build around.",
-    "Consensus agrees on {player}’s ceiling—5-star status and dominant tape—so {manager} adds him without hesitation, instantly upgrading their roster's potential.",
+    "Consensus agrees on {player}'s ceiling—5-star status and dominant tape—so {manager} adds him without hesitation, instantly upgrading their roster's potential.",
     "It's a gift at this spot in round {round}. {manager} lands {player}, a 5-star prospect from {college} who brings a rare combination of size, skill, and polish.",
     "This is how championships are built. {manager} grabs {player}, a transcendent 5-star talent whose projection smokes his {adp_phrase}.",
     "No need to overthink it. {player} is an elite, plug-and-play prospect, and {manager} makes the obvious, high-value choice to anchor their team for years to come.",
@@ -419,11 +417,11 @@ templates_freshman_elite = [
 ]
 templates_upside = [
     "Swinging for the fences, {manager} pulls the trigger on {player}, a high‑variance prospect whose {adp_phrase} will look like a steal if he breaks out.",
-    "Floor is secondary to ceiling here: {manager} bets on {player}’s raw tools to ignite big returns.",
+    "Floor is secondary to ceiling here: {manager} bets on {player}'s raw tools to ignite big returns.",
     "With championship aspirations, {manager} reaches for {player}, banking on upside over safety.",
     "This pick screams upside: {player} brings explosive traits and high ceiling—perfect for a bold gamble.",
     "{manager} takes a coin‑flip chance on {player}, a boom‑or‑bust rookie who could redefine this draft.",
-    "This pick is all about potential energy. {manager} bets on {player}’s raw, explosive tools, ignoring the low floor for a shot at a massive return.",
+    "This pick is all about potential energy. {manager} bets on {player}'s raw, explosive tools, ignoring the low floor for a shot at a massive return.",
     "With championship aspirations, {manager} reaches for {player}, banking on game-breaking upside over a safer, lower-impact alternative.",
     "This is a classic lottery ticket. {manager} takes a coin-flip chance on {player}, a boom-or-bust prospect who could either redefine this team or be a total bust.",
     "Forget the safe play; {manager} is hunting for a league-winner. {player} has a questionable floor but possesses the kind of ceiling that can single-handedly win a title.",
@@ -433,11 +431,11 @@ templates_upside = [
 templates_rtc_profile = [
     "Staying on script, {manager} selects {player}, a dependable talent whose track record and {adp_phrase} align perfectly with round {round} norms.",
     "No surprises: {manager} locks in value with {player}, a balanced prospect meeting expectations for this stage.",
-    "Right player, right round—{player} offers a safe floor and moderate upside, matching the pick’s profile.",
-    "By‑the‑book selection: {player} delivers consistency and fits {manager}’s plan for round {round}.",
+    "Right player, right round—{player} offers a safe floor and moderate upside, matching the pick's profile.",
+    "By‑the‑book selection: {player} delivers consistency and fits {manager}'s plan for round {round}.",
     "{player} slots seamlessly into the roster, hitting the sweet spot of risk and reward that {manager} targets in this round.",
     "No surprises here. {manager} locks in solid value with {player}, a balanced prospect who meets all expectations for this stage of the draft.",
-    "This is a bread-and-butter selection. {player} offers a safe floor and moderate upside, perfectly matching the pick’s profile and {manager}'s steady approach.",
+    "This is a bread-and-butter selection. {player} offers a safe floor and moderate upside, perfectly matching the pick's profile and {manager}'s steady approach.",
     "Right player, right price, right round. {manager} makes the logical choice in {player}, a player who slots seamlessly into the roster without unnecessary risk.",
     "By-the-book drafting from {manager}. {player} delivers consistency and fills a need, hitting the sweet spot of risk and reward they target in this round.",
     "After a risky pick like {past_pick}, {manager} smartly pivots to a high-floor player in {player}, bringing balance back to their draft.",
@@ -455,7 +453,7 @@ templates_forced = [
     "This feels like a panic move. Draft day chaos forces {manager} into selecting {player}, an off-scheme choice that serves as a temporary patch rather than a strategic fit.",
     "The board did not fall {manager}'s way. Out of better options, they pivot to {player}, a pick that feels more like a concession than a conviction.",
     "A clear departure from their strategy. With the players they coveted off the board, {manager} takes {player} in a move that screams \"making the best of a bad situation.\"",
-    "{manager} was backed into a corner here and had to take {player}. It’s a pick that prevents a total disaster at the position but strays far from their game plan.",
+    "{manager} was backed into a corner here and had to take {player}. It's a pick that prevents a total disaster at the position but strays far from their game plan.",
 ]
 templates_rtc_outlier = [
     "Defying convention, {manager} pounces on {player} at pick {round}, leaping past {adp_phrase} to snatch high potential.",
@@ -761,52 +759,56 @@ with main_col:
         st.info("Draft results will appear here as the draft progresses.")
 
     # --- User Player Pool ---
-    # Make sure manager is defined as before
-    if 'manager' in locals() and manager == st.session_state.your_team:
-        st.subheader("Your Player Pool")
-        show_cols = ["Player", "Position", "College", "PickType", "Stars", "Rating", "ADP", "NormPlayer"]
-        available = pool[~pool["NormPlayer"].isin(st.session_state.drafted)].copy()
-        for col in ["Stars", "Rating", "ADP"]:
-            if col in available.columns:
-                available[col] = pd.to_numeric(available[col], errors="coerce")
-        available = available.sort_values("ADP", ascending=True)
+    # Check if manager variable exists and it's the user's turn
+    if st.session_state.current_pick_idx < len(draft_order):
+        pick_row = draft_order.iloc[st.session_state.current_pick_idx]
+        current_manager = normalize_name(pick_row["Manager"])
         
-        gb_pool = GridOptionsBuilder.from_dataframe(available[show_cols])
-        gb_pool.configure_selection('single', use_checkbox=True)
-        gb_pool.configure_default_column(filterable=True, sortable=True, resizable=True)
-        gb_pool.configure_column("NormPlayer", hide=True)
-        gridOptions_pool = gb_pool.build()
+        if current_manager == st.session_state.your_team:
+            st.subheader("Your Player Pool")
+            show_cols = ["Player", "Position", "College", "PickType", "Stars", "Rating", "ADP", "NormPlayer"]
+            available = pool[~pool["NormPlayer"].isin(st.session_state.drafted)].copy()
+            for col in ["Stars", "Rating", "ADP"]:
+                if col in available.columns:
+                    available[col] = pd.to_numeric(available[col], errors="coerce")
+            available = available.sort_values("ADP", ascending=True)
+            
+            gb_pool = GridOptionsBuilder.from_dataframe(available[show_cols])
+            gb_pool.configure_selection('single', use_checkbox=True)
+            gb_pool.configure_default_column(filterable=True, sortable=True, resizable=True)
+            gb_pool.configure_column("NormPlayer", hide=True)
+            gridOptions_pool = gb_pool.build()
 
-        # Generate unique key based on available players and drafted set
-        pool_data_hash = generate_data_hash(list(st.session_state.drafted))
+            # Generate unique key based on available players and drafted set
+            pool_data_hash = generate_data_hash(list(st.session_state.drafted))
 
-        grid_response_pool = AgGrid(
-            available[show_cols],
-            gridOptions=gridOptions_pool,
-            update_mode=GridUpdateMode.SELECTION_CHANGED,
-            allow_unsafe_jscode=False,
-            fit_columns_on_grid_load=True,
-            enable_enterprise_modules=False,
-            reload_data=True,
-            height=400,
-            theme="streamlit",
-            key=f"player_pool_{pool_data_hash}_{len(available)}"
-        )
-        
-        st.markdown("""
-            <script>
-            window.dispatchEvent(new Event('resize'));
-            </script>
-        """, unsafe_allow_html=True)
-        
-        selected_row = get_selected_row(grid_response_pool)
-        if selected_row:
-            st.write(f"Selected: **{selected_row['Player']} ({selected_row['Position']})**")
-        draft_button = st.button("Draft Selected Player", disabled=not selected_row)
-        if draft_button and selected_row:
-            # Your draft logic here
-            pass
-        st.info("Select a player row and click 'Draft Selected Player'.")
+            grid_response_pool = AgGrid(
+                available[show_cols],
+                gridOptions=gridOptions_pool,
+                update_mode=GridUpdateMode.SELECTION_CHANGED,
+                allow_unsafe_jscode=False,
+                fit_columns_on_grid_load=True,
+                enable_enterprise_modules=False,
+                reload_data=True,
+                height=400,
+                theme="streamlit",
+                key=f"player_pool_{pool_data_hash}_{len(available)}"
+            )
+            
+            st.markdown("""
+                <script>
+                window.dispatchEvent(new Event('resize'));
+                </script>
+            """, unsafe_allow_html=True)
+            
+            selected_row = get_selected_row(grid_response_pool)
+            if selected_row:
+                st.write(f"Selected: **{selected_row['Player']} ({selected_row['Position']})**")
+            draft_button = st.button("Draft Selected Player", disabled=not selected_row)
+            if draft_button and selected_row:
+                # User draft logic will be handled in the main flow below
+                pass
+            st.info("Select a player row and click 'Draft Selected Player'.")
 
 if st.session_state.current_pick_idx < len(draft_order):
     pick_row = draft_order.iloc[st.session_state.current_pick_idx]
@@ -837,36 +839,9 @@ if st.session_state.current_pick_idx < len(draft_order):
 # --- USER PICK ---
 if manager == st.session_state.your_team:
     st.session_state.auto_drafting = False
-    st.subheader("Your Player Pool")
-    show_cols = ["Player", "Position", "College", "PickType", "Stars", "Rating", "ADP", "NormPlayer"]
     
-    # User picks: show ALL undrafted players, NO can_draft filtering!
-    available = pool[~pool["NormPlayer"].isin(st.session_state.drafted)].copy()
-    
-    for col in ["Stars", "Rating", "ADP"]:
-        if col in available.columns:
-            available[col] = pd.to_numeric(available[col], errors="coerce")
-    available = available.sort_values("ADP", ascending=True)
-    gb = GridOptionsBuilder.from_dataframe(available[show_cols])
-    gb.configure_selection('single', use_checkbox=True)
-    gb.configure_default_column(filterable=True, sortable=True, resizable=True)
-    gb.configure_column("NormPlayer", hide=True)
-    gridOptions = gb.build()
-    grid_response = AgGrid(
-        available[show_cols],
-        gridOptions=gridOptions,
-        update_mode=GridUpdateMode.SELECTION_CHANGED,
-        allow_unsafe_jscode=False,
-        fit_columns_on_grid_load=True,
-        enable_enterprise_modules=False,
-        height=400,
-        theme="streamlit"
-    )
-    selected_row = get_selected_row(grid_response)
-    if selected_row:
-        st.write(f"Selected: **{selected_row['Player']} ({selected_row['Position']})**")
-    draft_button = st.button("Draft Selected Player", disabled=not selected_row)
-    if draft_button and selected_row:
+    # Handle user draft button click
+    if 'draft_button' in locals() and draft_button and 'selected_row' in locals() and selected_row:
         st.session_state.drafted.add(selected_row["NormPlayer"])
         # update_roster for user
         pos = selected_row["Position"]
@@ -909,7 +884,6 @@ if manager == st.session_state.your_team:
         st.session_state.current_pick_idx += 1
         st.session_state.pick_number += 1
         st.rerun()
-    st.info("Select a player row and click 'Draft Selected Player'.")
 
 # --- CPU PICKS: use simulation script logic ---
 else:
@@ -985,123 +959,4 @@ else:
                     {"Freshman": 0, "Upside": 0, "RTC": 0},
                     99, profile, "2025"
                 )
-                st.session_state.draft_results.append({
-                    "Round": round_num,
-                    "Manager": manager,
-                    "Overall Pick": overall_pick,
-                    "Player": pick_row_out["Player"],
-                    "Position": pick_row_out["Position"],
-                    "College": pick_row_out["College"],
-                    "PickType": pick_row_out["PickType"],
-                    "Stars": pick_row_out.get("Stars", ""),
-                    "Rating": pick_row_out.get("Rating", ""),
-                    "ADP": pick_row_out.get("ADP", ""),
-                    "Explanation": expl
-                })
-                return True
-        if available.empty:
-            st.session_state.draft_results.append({
-                "Round": round_num, "Manager": manager, "Overall Pick": overall_pick,
-                "Player": "No eligible players left", "Position": "", "College": "",
-                "PickType": "", "Stars": "", "Rating": "", "ADP": "", "Explanation": "No eligible players"
-            })
-            return True
-        pt_weights, pos_weights, col_weights, quota_fresh, quota_upside, quota_rtc, rtc_lock, profile, profile_type = get_manager_profile(manager)
-        quotas = {"Freshman": quota_fresh, "Upside": quota_upside, "RTC": quota_rtc}
-        counts = st.session_state.mgr_type_counts.get(manager, {"Freshman": 0, "RTC": 0, "Upside": 0})
-        for t in ["Freshman", "RTC", "Upside"]:
-            if t not in counts:
-                counts[t] = 0
-        # Position exclusions
-        for pos in ['QB', 'WR', 'RB']:
-            if should_exclude_position(profile, pos, get_manager_drafted_list(manager), round_num):
-                available = available[available['Position'] != pos]
-        pick_row_out, expl = draft_pick(manager, available, round_num,
-            st.session_state.drafted, st.session_state.pick_number, quotas, rtc_lock, pt_weights, counts, profile_type, profile)
-        if pick_row_out is None:
-            st.session_state.draft_results.append({
-                "Round": round_num, "Manager": manager, "Overall Pick": overall_pick,
-                "Player": "No eligible players left", "Position": "", "College": "",
-                "PickType": "", "Stars": "", "Rating": "", "ADP": "", "Explanation": "No eligible players"
-            })
-            return True
-        st.session_state.drafted.add(pick_row_out["NormPlayer"])
-        # update_roster for CPU
-        pos = pick_row_out["Position"]
-        if manager not in st.session_state.rosters:
-            st.session_state.rosters[manager] = {"QB":0, "RB":0, "WR":0, "TE":0}
-        if pos in st.session_state.rosters[manager]:
-            st.session_state.rosters[manager][pos] += 1
-        if manager not in st.session_state.mgr_type_counts:
-            st.session_state.mgr_type_counts[manager] = {"Freshman": 0, "RTC": 0, "Upside": 0}
-        ptype = pick_row_out["PickType"]
-        if ptype not in st.session_state.mgr_type_counts[manager]:
-            st.session_state.mgr_type_counts[manager][ptype] = 0
-        st.session_state.mgr_type_counts[manager][ptype] += 1
-        # for manager_drafted_players
-        if manager not in st.session_state.manager_drafted_players:
-            st.session_state.manager_drafted_players[manager] = []
-        st.session_state.manager_drafted_players[manager].append({
-            "Player": pick_row_out["Player"],
-            "Position": pick_row_out["Position"],
-            "NormPlayer": pick_row_out["NormPlayer"],
-            "College": pick_row_out["College"],
-            "PickType": pick_row_out.get("PickType", ""),
-            "Stars": pick_row_out.get("Stars", ""),
-            "Rating": pick_row_out.get("Rating", ""),
-            "ADP": pick_row_out.get("ADP", "")
-        })
-        st.session_state.draft_results.append({
-            "Round": round_num,
-            "Manager": manager,
-            "Overall Pick": overall_pick,
-            "Player": pick_row_out["Player"],
-            "Position": pick_row_out["Position"],
-            "College": pick_row_out["College"],
-            "PickType": pick_row_out["PickType"],
-            "Stars": pick_row_out.get("Stars", ""),
-            "Rating": pick_row_out.get("Rating", ""),
-            "ADP": pick_row_out.get("ADP", ""),
-            "Explanation": expl
-        })
-        return True
-
-    # Step Button
-    if step_button:
-        simulate_next_pick(st.session_state.current_pick_idx)
-        st.session_state.current_pick_idx += 1
-        st.session_state.pick_number += 1
-        st.rerun()
-    # Skip Button
-    if skip_button:
-        while st.session_state.current_pick_idx < len(draft_order):
-            manager = normalize_name(draft_order.iloc[st.session_state.current_pick_idx]["Manager"])
-            if manager == st.session_state.your_team:
-                break
-            simulate_next_pick(st.session_state.current_pick_idx)
-            st.session_state.current_pick_idx += 1
-            st.session_state.pick_number += 1
-        st.rerun()
-    # Auto Button
-    if auto_button:
-        st.session_state.auto_drafting = True
-    if st.session_state.auto_drafting:
-        manager = normalize_name(draft_order.iloc[st.session_state.current_pick_idx]["Manager"])
-        if manager == st.session_state.your_team:
-            st.session_state.auto_drafting = False
-        else:
-            simulate_next_pick(st.session_state.current_pick_idx)
-            st.session_state.current_pick_idx += 1
-            st.session_state.pick_number += 1
-            time.sleep(draft_speed)
-            st.rerun()
-    st.info("Use simulation controls above the board.")
-
-if st.session_state.current_pick_idx >= len(draft_order):
-    st.success("Draft complete!")
-    st.download_button(
-        label="Download draft results as CSV",
-        data=df_draft.to_csv(index=False),
-        file_name="draft_results.csv",
-        mime="text/csv"
-    )
+                st.session_state
