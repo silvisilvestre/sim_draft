@@ -742,86 +742,66 @@ main_col, _ = st.columns([7, 1])
 
 # Add this fix right after the AgGrid component in both parts of your code
 
-# Replace the AgGrid section in your draft board with this:
 with main_col:
-    # --- Draft Board ---
+    # --- Draft Board (Simple Dataframe Version) ---
+    st.subheader("Draft Results")
+    
     board_cols = ["Round", "Overall Pick", "Manager", "Player", "Position", "College", "PickType", "Stars", "Rating", "ADP", "Explanation"]
     df_board = pd.DataFrame(st.session_state.draft_results, columns=board_cols)
-    df_board = df_board.iloc[::-1].reset_index(drop=True) if not df_board.empty else pd.DataFrame(columns=board_cols)
-    for col in ["Stars", "Rating", "ADP"]:
-        if col in df_board.columns:
-            df_board[col] = pd.to_numeric(df_board[col], errors="coerce")
-    
-    # Show AgGrid for the draft board
-    gb = GridOptionsBuilder.from_dataframe(df_board)
-    gb.configure_selection('single', use_checkbox=True)
-    gb.configure_default_column(filterable=True, sortable=True, resizable=True)
-    gridOptions = gb.build()
-
-    # Generate unique key based on actual draft results data
-    draft_data_hash = generate_data_hash(st.session_state.draft_results)
-
-    # Add this JavaScript to force proper rendering
-    st.markdown("""
-        <script>
-        // Force AgGrid to resize after page load
-        setTimeout(function() {
-            window.dispatchEvent(new Event('resize'));
-        }, 100);
-        
-        // Additional resize events with delays
-        setTimeout(function() {
-            window.dispatchEvent(new Event('resize'));
-        }, 500);
-        
-        setTimeout(function() {
-            window.dispatchEvent(new Event('resize'));
-        }, 1000);
-        </script>
-    """, unsafe_allow_html=True)
-
-    grid_response = AgGrid(
-        df_board,
-        gridOptions=gridOptions,
-        update_mode=GridUpdateMode.SELECTION_CHANGED,
-        allow_unsafe_jscode=False,
-        fit_columns_on_grid_load=True,
-        enable_enterprise_modules=False,
-        reload_data=True,
-        height=600,
-        theme="streamlit",
-        key=f"draft_board_{draft_data_hash}_{len(df_board)}",
-        custom_css={
-            "#gridToolBar": {"padding-bottom": "0px !important"},
-            ".ag-root-wrapper": {"min-height": "600px !important", "height": "600px !important"},
-            ".ag-center-cols-container": {"min-height": "500px !important"}
-        }
-    )
-    
-    # Force another resize after AgGrid renders
-    st.markdown("""
-        <script>
-        setTimeout(function() {
-            window.dispatchEvent(new Event('resize'));
-            // Try to force AgGrid API resize if available
-            if (window.agGridInstances) {
-                Object.values(window.agGridInstances).forEach(function(gridApi) {
-                    if (gridApi && gridApi.sizeColumnsToFit) {
-                        gridApi.sizeColumnsToFit();
-                    }
-                });
-            }
-        }, 200);
-        </script>
-    """, unsafe_allow_html=True)
     
     if not df_board.empty:
-        selected_pick = get_selected_row(grid_response)
-        if selected_pick:
-            st.subheader(f"Explanation for {selected_pick['Player']}:")
-            st.text_area("Explanation", selected_pick['Explanation'], height=120)
+        # Reverse order to show most recent picks first
+        df_board = df_board.iloc[::-1].reset_index(drop=True)
+        
+        # Clean up numeric columns
+        for col in ["Stars", "Rating", "ADP"]:
+            if col in df_board.columns:
+                df_board[col] = pd.to_numeric(df_board[col], errors="coerce")
+        
+        # Display as interactive dataframe
+        st.dataframe(
+            df_board,
+            use_container_width=True,
+            height=600,
+            hide_index=True,
+            column_config={
+                "Round": st.column_config.NumberColumn("Round", width=80),
+                "Overall Pick": st.column_config.NumberColumn("Pick", width=80),
+                "Manager": st.column_config.TextColumn("Manager", width=150),
+                "Player": st.column_config.TextColumn("Player", width=150),
+                "Position": st.column_config.TextColumn("Pos", width=80),
+                "College": st.column_config.TextColumn("College", width=120),
+                "PickType": st.column_config.TextColumn("Type", width=100),
+                "Stars": st.column_config.NumberColumn("★", width=60),
+                "Rating": st.column_config.NumberColumn("Rating", width=80),
+                "ADP": st.column_config.NumberColumn("ADP", width=80),
+                "Explanation": st.column_config.TextColumn("Explanation", width=300)
+            }
+        )
+        
+        # Add explanation viewer
+        st.subheader("Pick Explanations")
+        selected_pick_idx = st.selectbox(
+            "Select a pick to view explanation:",
+            options=range(len(df_board)),
+            format_func=lambda x: f"#{df_board.iloc[x]['Overall Pick']}: {df_board.iloc[x]['Player']}"
+        )
+        
+        if selected_pick_idx is not None:
+            selected_pick = df_board.iloc[selected_pick_idx]
+            st.text_area(
+                f"Explanation for {selected_pick['Player']}:",
+                selected_pick['Explanation'],
+                height=120,
+                disabled=True
+            )
     else:
-        st.info("Draft results will appear here as the draft progresses.")
+        st.info("Draft results will appear here as picks are made.")
+        
+        # Debug information
+        st.write(f"Debug - Draft results count: {len(st.session_state.draft_results)}")
+        st.write(f"Debug - Current pick index: {st.session_state.current_pick_idx}")
+        st.write(f"Debug - Draft started: {st.session_state.draft_started}")
 
 if st.session_state.current_pick_idx < len(draft_order):
     pick_row = draft_order.iloc[st.session_state.current_pick_idx]
