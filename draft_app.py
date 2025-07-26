@@ -724,27 +724,27 @@ with main_col:
         if col in df_board.columns:
             df_board[col] = pd.to_numeric(df_board[col], errors="coerce")
     
-    # Show AgGrid for the draft board
-    gb = GridOptionsBuilder.from_dataframe(df_board)
-    gb.configure_selection('single', use_checkbox=True)
-    gb.configure_default_column(filterable=True, sortable=True, resizable=True)
-    gridOptions = gb.build()
-    
-    # Generate unique key based on actual draft results data
-    draft_data_hash = generate_data_hash(st.session_state.draft_results)
-    
-    grid_response = AgGrid(
-        df_board,
-        gridOptions=gridOptions,
-        update_mode=GridUpdateMode.SELECTION_CHANGED,
-        allow_unsafe_jscode=False,
-        fit_columns_on_grid_load=True,
-        enable_enterprise_modules=False,
-        reload_data=True,
-        height=600,
-        theme="streamlit",
-        key=f"draft_board_{draft_data_hash}_{len(df_board)}"
-    )
+# Show AgGrid for the draft board
+gb = GridOptionsBuilder.from_dataframe(df_board)
+gb.configure_selection('single', use_checkbox=True)
+gb.configure_default_column(filterable=True, sortable=True, resizable=True)
+gridOptions = gb.build()
+
+# Generate unique key based on actual draft results data
+draft_data_hash = generate_data_hash(st.session_state.draft_results)
+
+grid_response = AgGrid(
+    df_board,
+    gridOptions=gridOptions,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
+    allow_unsafe_jscode=False,
+    fit_columns_on_grid_load=True,
+    enable_enterprise_modules=False,
+    reload_data=True,
+    height=600,
+    theme="streamlit",
+    key=f"draft_board_{draft_data_hash}_{len(df_board)}"
+)
     st.markdown("""
         <script>
         window.dispatchEvent(new Event('resize'));
@@ -769,27 +769,27 @@ if 'manager' in locals() and manager == st.session_state.your_team:
             available[col] = pd.to_numeric(available[col], errors="coerce")
     available = available.sort_values("ADP", ascending=True)
     
-    gb_pool = GridOptionsBuilder.from_dataframe(available[show_cols])
-    gb_pool.configure_selection('single', use_checkbox=True)
-    gb_pool.configure_default_column(filterable=True, sortable=True, resizable=True)
-    gb_pool.configure_column("NormPlayer", hide=True)
-    gridOptions_pool = gb_pool.build()
-    
-    # Generate unique key based on available players and drafted set
-    pool_data_hash = generate_data_hash(list(st.session_state.drafted))
-    
-    grid_response_pool = AgGrid(
-        available[show_cols],
-        gridOptions=gridOptions_pool,
-        update_mode=GridUpdateMode.SELECTION_CHANGED,
-        allow_unsafe_jscode=False,
-        fit_columns_on_grid_load=True,
-        enable_enterprise_modules=False,
-        reload_data=True,
-        height=400,
-        theme="streamlit",
-        key=f"player_pool_{pool_data_hash}_{len(available)}"
-    )
+gb_pool = GridOptionsBuilder.from_dataframe(available[show_cols])
+gb_pool.configure_selection('single', use_checkbox=True)
+gb_pool.configure_default_column(filterable=True, sortable=True, resizable=True)
+gb_pool.configure_column("NormPlayer", hide=True)
+gridOptions_pool = gb_pool.build()
+
+# Generate unique key based on available players and drafted set
+pool_data_hash = generate_data_hash(list(st.session_state.drafted))
+
+grid_response_pool = AgGrid(
+    available[show_cols],
+    gridOptions=gridOptions_pool,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
+    allow_unsafe_jscode=False,
+    fit_columns_on_grid_load=True,
+    enable_enterprise_modules=False,
+    reload_data=True,
+    height=400,
+    theme="streamlit",
+    key=f"player_pool_{pool_data_hash}_{len(available)}"
+)
         st.markdown("""
             <script>
             window.dispatchEvent(new Event('resize'));
