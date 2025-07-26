@@ -561,14 +561,6 @@ def draft_pick(
                     quotas, counts, rtc_lock, profile, current_year=current_year
                 )
                 return pick_row, expl
-            if picktype == "Upside" and not avail_type.empty:
-                top_n = avail_type.sort_values("score", ascending=False).head(5)
-                pick_row = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else avail_type.iloc[0]
-                expl = human_explain_pick(
-                    manager, pick_row, round_num, profile_type, False, False,
-                    quotas, counts, rtc_lock, profile, current_year=current_year
-                )
-                return pick_row, expl
 
     # Early rounds lock logic (manager profile-based, random from top 3)
     if round_num < rtc_lock:
@@ -711,7 +703,7 @@ if "sim_step" not in st.session_state:
 st.header("Draft Board")
 
 # Use a wide main column for both the board and user pool
-main_col, _ = st.columns([7, 1])  # main_col gets ~87%, _ is dummy for sidebar space
+main_col, _ = st.columns([7, 1])
 
 with main_col:
     # --- Draft Board ---
@@ -743,12 +735,6 @@ with main_col:
         theme="streamlit",
         key=f"draft_board_{draft_data_hash}_{len(df_board)}"
     )
-    
-    st.markdown("""
-        <script>
-        window.dispatchEvent(new Event('resize'));
-        </script>
-    """, unsafe_allow_html=True)
     
     if not df_board.empty:
         selected_pick = get_selected_row(grid_response)
@@ -821,12 +807,6 @@ if st.session_state.current_pick_idx < len(draft_order):
                 theme="streamlit",
                 key=f"player_pool_{pool_data_hash}_{len(available)}"
             )
-            
-            st.markdown("""
-                <script>
-                window.dispatchEvent(new Event('resize'));
-                </script>
-            """, unsafe_allow_html=True)
             
             selected_row = get_selected_row(grid_response_pool)
             if selected_row:
@@ -960,4 +940,118 @@ if st.session_state.current_pick_idx < len(draft_order):
                         "Overall Pick": overall_pick,
                         "Player": pick_row_out["Player"],
                         "Position": pick_row_out["Position"],
-                        "College": pick_row
+                        "College": pick_row_out["College"],
+                        "PickType": pick_row_out["PickType"],
+                        "Stars": pick_row_out.get("Stars", ""),
+                        "Rating": pick_row_out.get("Rating", ""),
+                        "ADP": pick_row_out.get("ADP", ""),
+                        "Explanation": expl
+                    })
+                    return True
+            if available.empty:
+                st.session_state.draft_results.append({
+                    "Round": round_num, "Manager": manager, "Overall Pick": overall_pick,
+                    "Player": "No eligible players left", "Position": "", "College": "",
+                    "PickType": "", "Stars": "", "Rating": "", "ADP": "", "Explanation": "No eligible players"
+                })
+                return True
+            pt_weights, pos_weights, col_weights, quota_fresh, quota_upside, quota_rtc, rtc_lock, profile, profile_type = get_manager_profile(manager)
+            quotas = {"Freshman": quota_fresh, "Upside": quota_upside, "RTC": quota_rtc}
+            counts = st.session_state.mgr_type_counts.get(manager, {"Freshman": 0, "RTC": 0, "Upside": 0})
+            for t in ["Freshman", "RTC", "Upside"]:
+                if t not in counts:
+                    counts[t] = 0
+            # Position exclusions
+            for pos in ['QB', 'WR', 'RB']:
+                if should_exclude_position(profile, pos, get_manager_drafted_list(manager), round_num):
+                    available = available[available['Position'] != pos]
+            pick_row_out, expl = draft_pick(manager, available, round_num,
+                st.session_state.drafted, st.session_state.pick_number, quotas, rtc_lock, pt_weights, counts, profile_type, profile)
+            if pick_row_out is None:
+                st.session_state.draft_results.append({
+                    "Round": round_num, "Manager": manager, "Overall Pick": overall_pick,
+                    "Player": "No eligible players left", "Position": "", "College": "",
+                    "PickType": "", "Stars": "", "Rating": "", "ADP": "", "Explanation": "No eligible players"
+                })
+                return True
+            st.session_state.drafted.add(pick_row_out["NormPlayer"])
+            # update_roster for CPU
+            pos = pick_row_out["Position"]
+            if manager not in st.session_state.rosters:
+                st.session_state.rosters[manager] = {"QB":0, "RB":0, "WR":0, "TE":0}
+            if pos in st.session_state.rosters[manager]:
+                st.session_state.rosters[manager][pos] += 1
+            if manager not in st.session_state.mgr_type_counts:
+                st.session_state.mgr_type_counts[manager] = {"Freshman": 0, "RTC": 0, "Upside": 0}
+            ptype = pick_row_out["PickType"]
+            if ptype not in st.session_state.mgr_type_counts[manager]:
+                st.session_state.mgr_type_counts[manager][ptype] = 0
+            st.session_state.mgr_type_counts[manager][ptype] += 1
+            # for manager_drafted_players
+            if manager not in st.session_state.manager_drafted_players:
+                st.session_state.manager_drafted_players[manager] = []
+            st.session_state.manager_drafted_players[manager].append({
+                "Player": pick_row_out["Player"],
+                "Position": pick_row_out["Position"],
+                "NormPlayer": pick_row_out["NormPlayer"],
+                "College": pick_row_out["College"],
+                "PickType": pick_row_out.get("PickType", ""),
+                "Stars": pick_row_out.get("Stars", ""),
+                "Rating": pick_row_out.get("Rating", ""),
+                "ADP": pick_row_out.get("ADP", "")
+            })
+            st.session_state.draft_results.append({
+                "Round": round_num,
+                "Manager": manager,
+                "Overall Pick": overall_pick,
+                "Player": pick_row_out["Player"],
+                "Position": pick_row_out["Position"],
+                "College": pick_row_out["College"],
+                "PickType": pick_row_out["PickType"],
+                "Stars": pick_row_out.get("Stars", ""),
+                "Rating": pick_row_out.get("Rating", ""),
+                "ADP": pick_row_out.get("ADP", ""),
+                "Explanation": expl
+            })
+            return True
+
+        # Step Button
+        if step_button:
+            simulate_next_pick(st.session_state.current_pick_idx)
+            st.session_state.current_pick_idx += 1
+            st.session_state.pick_number += 1
+            st.rerun()
+        # Skip Button
+        if skip_button:
+            while st.session_state.current_pick_idx < len(draft_order):
+                manager = normalize_name(draft_order.iloc[st.session_state.current_pick_idx]["Manager"])
+                if manager == st.session_state.your_team:
+                    break
+                simulate_next_pick(st.session_state.current_pick_idx)
+                st.session_state.current_pick_idx += 1
+                st.session_state.pick_number += 1
+            st.rerun()
+        # Auto Button
+        if auto_button:
+            st.session_state.auto_drafting = True
+        if st.session_state.auto_drafting:
+            manager = normalize_name(draft_order.iloc[st.session_state.current_pick_idx]["Manager"])
+            if manager == st.session_state.your_team:
+                st.session_state.auto_drafting = False
+            else:
+                simulate_next_pick(st.session_state.current_pick_idx)
+                st.session_state.current_pick_idx += 1
+                st.session_state.pick_number += 1
+                time.sleep(draft_speed)
+                st.rerun()
+        st.info("Use simulation controls above the board.")
+
+if st.session_state.current_pick_idx >= len(draft_order):
+    st.success("Draft complete!")
+    if 'df_board' in locals() and not df_board.empty:
+        st.download_button(
+            label="Download draft results as CSV",
+            data=df_board.to_csv(index=False),
+            file_name="draft_results.csv",
+            mime="text/csv"
+        )
