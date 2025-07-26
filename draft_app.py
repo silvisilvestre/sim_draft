@@ -713,21 +713,22 @@ with main_col:
         if col in df_board.columns:
             df_board[col] = pd.to_numeric(df_board[col], errors="coerce")
     # Show AgGrid for the draft board
-    gb = GridOptionsBuilder.from_dataframe(df_board)
-    gb.configure_selection('single', use_checkbox=True)
-    gb.configure_default_column(filterable=True, sortable=True, resizable=True)
-    gridOptions = gb.build()
-    grid_response = AgGrid(
-        df_board,
-        gridOptions=gridOptions,
-        update_mode=GridUpdateMode.SELECTION_CHANGED,
-        allow_unsafe_jscode=False,
-        fit_columns_on_grid_load=True,
-        enable_enterprise_modules=False,
-        height=600,
-        theme="streamlit"
-    )
-    st.markdown("""
+gb = GridOptionsBuilder.from_dataframe(df_board)
+gb.configure_selection('single', use_checkbox=True)
+gb.configure_default_column(filterable=True, sortable=True, resizable=True)
+gridOptions = gb.build()
+grid_response = AgGrid(
+    df_board,
+    gridOptions=gridOptions,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
+    allow_unsafe_jscode=False,
+    fit_columns_on_grid_load=True,
+    enable_enterprise_modules=False,
+    height=600,
+    theme="streamlit",
+    key=f"draft_board_{len(df_board)}_{st.session_state.current_pick_idx}"  # <-- NEW LINE!
+)
+st.markdown("""
     <script>
     window.dispatchEvent(new Event('resize'));
     </script>
@@ -755,17 +756,18 @@ with main_col:
         gb_pool.configure_default_column(filterable=True, sortable=True, resizable=True)
         gb_pool.configure_column("NormPlayer", hide=True)
         gridOptions_pool = gb_pool.build()
-        grid_response_pool = AgGrid(
-            available[show_cols],
-            gridOptions=gridOptions_pool,
-            update_mode=GridUpdateMode.SELECTION_CHANGED,
-            allow_unsafe_jscode=False,
-            fit_columns_on_grid_load=True,
-            enable_enterprise_modules=False,
-            height=400,
-            theme="streamlit"
-        )
-        st.markdown("""
+grid_response_pool = AgGrid(
+    available[show_cols],
+    gridOptions=gridOptions_pool,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
+    allow_unsafe_jscode=False,
+    fit_columns_on_grid_load=True,
+    enable_enterprise_modules=False,
+    height=400,
+    theme="streamlit",
+    key=f"player_pool_{len(available)}_{st.session_state.current_pick_idx}"  # <-- NEW LINE!
+)
+st.markdown("""
     <script>
     window.dispatchEvent(new Event('resize'));
     </script>
