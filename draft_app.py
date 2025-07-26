@@ -832,6 +832,8 @@ if st.session_state.current_pick_idx < len(draft_order):
     # --- USER PICK ---
 # Replace the player pool section in your user pick logic with this:
 
+# Replace your entire USER PICK section (from "if manager == st.session_state.your_team:" onwards) with this:
+
 if manager == st.session_state.your_team:
     st.session_state.auto_drafting = False
     
@@ -848,17 +850,6 @@ if manager == st.session_state.your_team:
         available = available.sort_values("ADP", ascending=True)
         
         if not available.empty:
-            # Display as interactive dataframe with selection
-            st.write("**Available Players:**")
-            
-            # Create a selection mechanism
-            player_options = []
-            for idx, row in available.iterrows():
-                player_options.append({
-                    'display': f"{row['Player']} ({row['Position']}) - {row['College']} - ADP: {row.get('ADP', 'N/A')}",
-                    'data': row
-                })
-            
             # Display the dataframe for browsing
             st.dataframe(
                 available[show_cols],
@@ -877,16 +868,20 @@ if manager == st.session_state.your_team:
             )
             
             # Player selection dropdown
-            st.write("**Select Player to Draft:**")
+            player_options = []
+            for idx, row in available.iterrows():
+                display_text = f"{row['Player']} ({row['Position']}) - {row['College']} - ADP: {row.get('ADP', 'N/A')}"
+                player_options.append((idx, display_text, row))
+            
             selected_player_idx = st.selectbox(
-                "Choose a player:",
+                "Choose a player to draft:",
                 options=range(len(player_options)),
-                format_func=lambda x: player_options[x]['display'],
+                format_func=lambda x: player_options[x][1],
                 key="player_selection"
             )
             
             if selected_player_idx is not None:
-                selected_row = player_options[selected_player_idx]['data']
+                selected_row = player_options[selected_player_idx][2]
                 st.write(f"**Selected:** {selected_row['Player']} ({selected_row['Position']}) from {selected_row['College']}")
                 
                 draft_button = st.button("Draft Selected Player", type="primary")
@@ -943,15 +938,12 @@ if manager == st.session_state.your_team:
                     st.session_state.current_pick_idx += 1
                     st.session_state.pick_number += 1
                     st.rerun()
-                    
-            else:
-                st.info("Select a player from the dropdown above to draft.")
-                
         else:
             st.warning("No players available to draft!")
 
-    # --- CPU PICKS: use simulation script logic ---
-    else:
+# CPU PICKS section starts here (make sure this is properly indented at the same level as the user pick section)
+else:
+    # Your existing CPU picks code continues here...
         def simulate_next_pick(idx):
             pick_row = draft_order.iloc[idx]
             round_num = int(pick_row["Round"])
