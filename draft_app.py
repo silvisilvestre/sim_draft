@@ -727,6 +727,16 @@ if "sim_step" not in st.session_state:
 
 st.header("Draft Board")
 
+if st.session_state.draft_started:
+    # Auto-refresh to ensure AgGrid renders properly
+    if 'grid_refresh_count' not in st.session_state:
+        st.session_state.grid_refresh_count = 0
+    
+    if st.session_state.grid_refresh_count < 3:
+        st.session_state.grid_refresh_count += 1
+        time.sleep(0.1)  
+        st.rerun()
+
 # Use a wide main column for both the board and user pool
 main_col, _ = st.columns([7, 1])
 
