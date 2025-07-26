@@ -705,6 +705,9 @@ st.header("Draft Board")
 # Use a wide main column for both the board and user pool
 main_col, _ = st.columns([7, 1])
 
+# Add this fix right after the AgGrid component in both parts of your code
+
+# Replace the AgGrid section in your draft board with this:
 with main_col:
     # --- Draft Board ---
     board_cols = ["Round", "Overall Pick", "Manager", "Player", "Position", "College", "PickType", "Stars", "Rating", "ADP", "Explanation"]
@@ -723,6 +726,25 @@ with main_col:
     # Generate unique key based on actual draft results data
     draft_data_hash = generate_data_hash(st.session_state.draft_results)
 
+    # Add this JavaScript to force proper rendering
+    st.markdown("""
+        <script>
+        // Force AgGrid to resize after page load
+        setTimeout(function() {
+            window.dispatchEvent(new Event('resize'));
+        }, 100);
+        
+        // Additional resize events with delays
+        setTimeout(function() {
+            window.dispatchEvent(new Event('resize'));
+        }, 500);
+        
+        setTimeout(function() {
+            window.dispatchEvent(new Event('resize'));
+        }, 1000);
+        </script>
+    """, unsafe_allow_html=True)
+
     grid_response = AgGrid(
         df_board,
         gridOptions=gridOptions,
@@ -733,8 +755,30 @@ with main_col:
         reload_data=True,
         height=600,
         theme="streamlit",
-        key=f"draft_board_{draft_data_hash}_{len(df_board)}"
+        key=f"draft_board_{draft_data_hash}_{len(df_board)}",
+        custom_css={
+            "#gridToolBar": {"padding-bottom": "0px !important"},
+            ".ag-root-wrapper": {"min-height": "600px !important", "height": "600px !important"},
+            ".ag-center-cols-container": {"min-height": "500px !important"}
+        }
     )
+    
+    # Force another resize after AgGrid renders
+    st.markdown("""
+        <script>
+        setTimeout(function() {
+            window.dispatchEvent(new Event('resize'));
+            // Try to force AgGrid API resize if available
+            if (window.agGridInstances) {
+                Object.values(window.agGridInstances).forEach(function(gridApi) {
+                    if (gridApi && gridApi.sizeColumnsToFit) {
+                        gridApi.sizeColumnsToFit();
+                    }
+                });
+            }
+        }, 200);
+        </script>
+    """, unsafe_allow_html=True)
     
     if not df_board.empty:
         selected_pick = get_selected_row(grid_response)
