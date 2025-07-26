@@ -756,22 +756,22 @@ with main_col:
         gb_pool.configure_default_column(filterable=True, sortable=True, resizable=True)
         gb_pool.configure_column("NormPlayer", hide=True)
         gridOptions_pool = gb_pool.build()
-grid_response_pool = AgGrid(
-    available[show_cols],
-    gridOptions=gridOptions_pool,
-    update_mode=GridUpdateMode.SELECTION_CHANGED,
-    allow_unsafe_jscode=False,
-    fit_columns_on_grid_load=True,
-    enable_enterprise_modules=False,
-    height=400,
-    theme="streamlit",
-    key=f"player_pool_{len(available)}_{st.session_state.current_pick_idx}"  # <-- NEW LINE!
-)
-st.markdown("""
-    <script>
-    window.dispatchEvent(new Event('resize'));
-    </script>
-""", unsafe_allow_html=True)
+        grid_response_pool = AgGrid(
+            available[show_cols],
+            gridOptions=gridOptions_pool,
+            update_mode=GridUpdateMode.SELECTION_CHANGED,
+            allow_unsafe_jscode=False,
+            fit_columns_on_grid_load=True,
+            enable_enterprise_modules=False,
+            height=400,
+            theme="streamlit",
+            key=f"player_pool_{len(available)}_{st.session_state.current_pick_idx}"  # <-- NEW LINE!
+        )
+        st.markdown("""
+            <script>
+            window.dispatchEvent(new Event('resize'));
+            </script>
+        """, unsafe_allow_html=True)
         selected_row = get_selected_row(grid_response_pool)
         if selected_row:
             st.write(f"Selected: **{selected_row['Player']} ({selected_row['Position']})**")
