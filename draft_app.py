@@ -849,13 +849,15 @@ if manager == st.session_state.your_team:
                 available[col] = pd.to_numeric(available[col], errors="coerce")
         
         if not available.empty:
-            # Initialize session state for selected player if not exists
+            # Initialize session state for selected player and pagination
             if 'selected_player_for_draft' not in st.session_state:
                 st.session_state.selected_player_for_draft = None
+            if 'current_page' not in st.session_state:
+                st.session_state.current_page = 1
             
             # Add sorting controls
             st.write("**Sort Players By:**")
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             
             with col1:
                 sort_by = st.selectbox(
@@ -878,6 +880,14 @@ if manager == st.session_state.your_team:
                     key="position_filter"
                 )
             
+            with col4:
+                players_per_page = st.selectbox(
+                    "Players per page:",
+                    options=[10, 15, 20, 30],
+                    index=1,  # Default to 15
+                    key="players_per_page"
+                )
+            
             # Apply filters and sorting
             filtered_available = available.copy()
             if position_filter != "All":
@@ -886,6 +896,14 @@ if manager == st.session_state.your_team:
             # Sort the data
             ascending = (sort_order == "Ascending")
             filtered_available = filtered_available.sort_values(sort_by, ascending=ascending).reset_index(drop=True)
+            
+            # Calculate pagination
+            total_players = len(filtered_available)
+            total_pages = (total_players - 1) // players_per_page + 1 if total_players > 0 else 1
+            
+            # Reset page if it's out of bounds (happens when filters change)
+            if st.session_state.current_page > total_pages:
+                st.session_state.current_page = 1
             
             # Show selected player at the top if any
             if st.session_state.selected_player_for_draft is not None:
@@ -954,6 +972,7 @@ if manager == st.session_state.your_team:
                         
                         # Clear selection and move to next pick
                         st.session_state.selected_player_for_draft = None
+                        st.session_state.current_page = 1  # Reset to first page after draft
                         st.session_state.current_pick_idx += 1
                         st.session_state.pick_number += 1
                         st.rerun()
@@ -965,14 +984,76 @@ if manager == st.session_state.your_team:
                 
                 st.write("---")
             
+            # Pagination controls
+            if total_pages > 1:
+                st.write(f"**Page Navigation** (Showing {total_players} players across {total_pages} pages)")
+                
+                col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+                
+                with col1:
+                    if st.button("⏮️ First", disabled=(st.session_state.current_page == 1)):
+                        st.session_state.current_page = 1
+                        st.rerun()
+                
+                with col2:
+                    if st.button("◀️ Prev", disabled=(st.session_state.current_page == 1)):
+                        st.session_state.current_page -= 1
+                        st.rerun()
+                
+                with col3:
+                    # Page selector
+                    new_page = st.selectbox(
+                        f"Page {st.session_state.current_page} of {total_pages}",
+                        options=list(range(1, total_pages + 1)),
+                        index=st.session_state.current_page - 1,
+                        key="page_selector"
+                    )
+                    if new_page != st.session_state.current_page:
+                        st.session_state.current_page = new_page
+                        st.rerun()
+                
+                with col4:
+                    if st.button("▶️ Next", disabled=(st.session_state.current_page == total_pages)):
+                        st.session_state.current_page += 1
+                        st.rerun()
+                
+                with col5:
+                    if st.button("⏭️ Last", disabled=(st.session_state.current_page == total_pages)):
+                        st.session_state.current_page = total_pages
+                        st.rerun()
+            
+            # Calculate which players to show on current page
+            start_idx = (st.session_state.current_page - 1) * players_per_page
+            end_idx = min(start_idx + players_per_page, total_players)
+            current_page_players = filtered_available.iloc[start_idx:end_idx]
+            
             # Display instruction
-            st.info("💡 **Click on any player name below to select them for drafting**")
+            st.info(f"💡 **Click on any player name to select for drafting** (Page {st.session_state.current_page}/{total_pages} - Showing players {start_idx + 1}-{end_idx} of {total_players})")
             
             # Create the player table with clickable names
-            st.write(f"**Available Players ({len(filtered_available)} players) - Sorted by {sort_by} ({sort_order}):**")
+            st.write(f"**Available Players - Sorted by {sort_by} ({sort_order}):**")
             
-            # Create a more compact table layout
-            for idx, row in filtered_available.iterrows():
+            # Table header
+            col1, col2, col3, col4, col5, col6, col7 = st.columns([3, 0.8, 2.5, 1.2, 0.8, 1, 1])
+            with col1:
+                st.write("**Player**")
+            with col2:
+                st.write("**Pos**")
+            with col3:
+                st.write("**College**")
+            with col4:
+                st.write("**Type**")
+            with col5:
+                st.write("**Stars**")
+            with col6:
+                st.write("**Rating**")
+            with col7:
+                st.write("**ADP**")
+            
+            st.write("---")
+            
+            # Create the player table with clickable names (only current page)
+            for idx, row in current_page_players.iterrows():
                 # Create columns for the table
                 col1, col2, col3, col4, col5, col6, col7 = st.columns([3, 0.8, 2.5, 1.2, 0.8, 1, 1])
                 
@@ -980,7 +1061,7 @@ if manager == st.session_state.your_team:
                     # Make the player name a clickable button
                     if st.button(
                         f"📌 {row['Player']}", 
-                        key=f"select_player_{idx}_{sort_by}_{sort_order}_{position_filter}",
+                        key=f"select_player_{idx}_{st.session_state.current_page}",
                         help=f"Click to select {row['Player']} for drafting",
                         type="secondary",
                         use_container_width=True
@@ -1006,9 +1087,37 @@ if manager == st.session_state.your_team:
                     st.write(adp_display)
                 
                 # Add a subtle separator
-                if idx < len(filtered_available) - 1:
+                if idx != current_page_players.index[-1]:
                     st.write("")
-                    
+            
+            # Bottom pagination (repeat for convenience)
+            if total_pages > 1:
+                st.write("---")
+                col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+                
+                with col1:
+                    if st.button("⏮️ First", key="first_bottom", disabled=(st.session_state.current_page == 1)):
+                        st.session_state.current_page = 1
+                        st.rerun()
+                
+                with col2:
+                    if st.button("◀️ Prev", key="prev_bottom", disabled=(st.session_state.current_page == 1)):
+                        st.session_state.current_page -= 1
+                        st.rerun()
+                
+                with col3:
+                    st.write(f"**Page {st.session_state.current_page} of {total_pages}**")
+                
+                with col4:
+                    if st.button("▶️ Next", key="next_bottom", disabled=(st.session_state.current_page == total_pages)):
+                        st.session_state.current_page += 1
+                        st.rerun()
+                
+                with col5:
+                    if st.button("⏭️ Last", key="last_bottom", disabled=(st.session_state.current_page == total_pages)):
+                        st.session_state.current_page = total_pages
+                        st.rerun()
+                        
         else:
             st.warning("No players available to draft!")
 
