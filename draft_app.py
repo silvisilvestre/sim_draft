@@ -11,8 +11,19 @@ import os
 import time
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 import streamlit as st
+import hashlib
+
 
 st.set_page_config(page_title="Draft Simulator: AI Logic Version", layout="wide")
+
+def generate_data_hash(data):
+    """Generate a hash based on the actual data content for AgGrid keys"""
+    if not data:
+        return "empty"
+    
+    # Convert data to string and create hash
+    data_str = str(data)
+    return hashlib.md5(data_str.encode()).hexdigest()[:8]  # Use first 8 characters
 
 st.markdown("""
     <style>
@@ -724,9 +735,12 @@ with main_col:
         allow_unsafe_jscode=False,
         fit_columns_on_grid_load=True,
         enable_enterprise_modules=False,
+        reload_data=True,  # ADD THIS LINE
         height=600,
         theme="streamlit",
-        key=f"draft_board_{len(df_board)}_{st.session_state.current_pick_idx}"
+        # Generate unique key based on actual draft results data
+        draft_data_hash = generate_data_hash(st.session_state.draft_results)
+        key=f"draft_board_{draft_data_hash}_{len(df_board)}"
     )
     st.markdown("""
         <script>
@@ -763,9 +777,12 @@ with main_col:
             allow_unsafe_jscode=False,
             fit_columns_on_grid_load=True,
             enable_enterprise_modules=False,
+            reload_data=True,  # ADD THIS LINE
             height=400,
             theme="streamlit",
-            key=f"player_pool_{len(available)}_{st.session_state.current_pick_idx}"  # <-- NEW LINE!
+                        # Generate unique key based on available players and drafted set
+            pool_data_hash = generate_data_hash(list(st.session_state.drafted))
+            key=f"player_pool_{pool_data_hash}_{len(available)}"
         )
         st.markdown("""
             <script>
