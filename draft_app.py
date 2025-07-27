@@ -551,7 +551,13 @@ def draft_pick(
     if avail.empty:
         return None, "No eligible player found."
 
-# Current scoring formula (around line 434-444)
+    # Score formula: manager profile-based, rating/star dominant, now with ADP factor
+    avail["stars_num"]    = pd.to_numeric(avail["Stars"], errors="coerce").fillna(0)
+    avail["rating_num"]   = pd.to_numeric(avail["Rating"], errors="coerce").fillna(0)
+    avail["pos_bias"]     = avail["Position"].map(lambda pos: pos_weights.get(pos, 0))
+    avail["college_bias"] = avail["NormCollege"].map(lambda col: college_weights.get(col, 0))
+    
+    # Current scoring formula
     avail["score"] = (
         avail["rating_num"] * 1.0 +
         avail["stars_num"] * 0.8 +
