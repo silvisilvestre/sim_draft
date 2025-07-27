@@ -568,7 +568,7 @@ def draft_pick(
     
     # Special boost for high-rated QBs (Rating > 0.9400)
     high_rated_qb_mask = (avail["Position"] == "QB") & (avail["rating_num"] > 0.9400)
-    avail.loc[high_rated_qb_mask, "score"] += 0.3  # Small boost to move them up in draft order
+    avail.loc[high_rated_qb_mask, "score"] += 0.09  # Small boost to move them up in draft order
 
     for picktype in ["Freshman", "Upside"]:
         if counts.get(picktype, 0) < quotas.get(picktype, 0):
