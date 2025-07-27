@@ -863,6 +863,7 @@ if manager == st.session_state.your_team:
                 sort_by = st.selectbox(
                     "Sort by:",
                     options=["ADP", "Rating", "Stars", "Player", "Position", "College"],
+                    index=1,  # Changed from default (0) to 1, which selects "Rating"
                     key="sort_column"
                 )
             
@@ -870,6 +871,7 @@ if manager == st.session_state.your_team:
                 sort_order = st.selectbox(
                     "Order:",
                     options=["Ascending", "Descending"],
+                    index=1,  # Changed from default (0) to 1, which selects "Descending"
                     key="sort_order"
                 )
             
