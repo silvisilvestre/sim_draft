@@ -244,7 +244,7 @@ def should_exclude_position(profile, pos, drafted_so_far, round_num):
     pos_weights = profile.get("simulation_profile", {}).get("position_weights", {})
     num_so_far = sum([p['Position'] == pos for p in drafted_so_far])
     pos_bias = pos_weights.get(pos, 0)
-    if pos == 'QB' and num_so_far >= 2 and round_num <= 5 and pos_bias < 3.5:
+    if pos == 'QB' and num_so_far >= 3 and round_num <= 5 and pos_bias < 3.5:
         return True
     if pos == 'WR' and num_so_far >= 3 and round_num <= 5 and pos_bias < 3.5:
         return True
@@ -551,11 +551,7 @@ def draft_pick(
     if avail.empty:
         return None, "No eligible player found."
 
-    # Score formula: manager profile-based, rating/star dominant, now with ADP factor
-    avail["stars_num"]    = pd.to_numeric(avail["Stars"], errors="coerce").fillna(0)
-    avail["rating_num"]   = pd.to_numeric(avail["Rating"], errors="coerce").fillna(0)
-    avail["pos_bias"]     = avail["Position"].map(lambda pos: pos_weights.get(pos, 0))
-    avail["college_bias"] = avail["NormCollege"].map(lambda col: college_weights.get(col, 0))
+# Current scoring formula (around line 434-444)
     avail["score"] = (
         avail["rating_num"] * 1.0 +
         avail["stars_num"] * 0.8 +
@@ -563,6 +559,10 @@ def draft_pick(
         avail["college_bias"].fillna(0) * 0.008 +
         (-pd.to_numeric(avail["ADP"], errors="coerce").fillna(1000) * 0.03)
     )
+    
+    # Special boost for high-rated QBs (Rating > 0.9400)
+    high_rated_qb_mask = (avail["Position"] == "QB") & (avail["rating_num"] > 0.9400)
+    avail.loc[high_rated_qb_mask, "score"] += 0.3  # Small boost to move them up in draft order
 
     for picktype in ["Freshman", "Upside"]:
         if counts.get(picktype, 0) < quotas.get(picktype, 0):
