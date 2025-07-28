@@ -568,11 +568,11 @@ def draft_pick(
     
     # Special boost for high-rated QBs (Rating > 0.9400)
     high_rated_qb_mask = (avail["Position"] == "QB") & (avail["rating_num"] > 0.9400)
-    avail.loc[high_rated_qb_mask, "score"] += 0.18  # Small boost to move them up in draft order
+    avail.loc[high_rated_qb_mask, "score"] += 0.17  # Small boost to move them up in draft order
 
     # Special boost for high-rated TEs (Rating > 0.9600)
     high_rated_te_mask = (avail["Position"] == "TE") & (avail["rating_num"] > 0.9600)
-    avail.loc[high_rated_te_mask, "score"] += 0.1  # Small boost for elite TEs
+    avail.loc[high_rated_te_mask, "score"] += 0.15  # Small boost for elite TEs
 
     for picktype in ["Freshman", "Upside"]:
         if counts.get(picktype, 0) < quotas.get(picktype, 0):
