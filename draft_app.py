@@ -568,11 +568,11 @@ def draft_pick(
     
     # Special boost for high-rated QBs (Rating > 0.9400)
     high_rated_qb_mask = (avail["Position"] == "QB") & (avail["rating_num"] > 0.9400)
-    avail.loc[high_rated_qb_mask, "score"] += 0.15  # Small boost to move them up in draft order
+    avail.loc[high_rated_qb_mask, "score"] += 0.18  # Small boost to move them up in draft order
 
     # Special boost for high-rated TEs (Rating > 0.9600)
     high_rated_te_mask = (avail["Position"] == "TE") & (avail["rating_num"] > 0.9600)
-    avail.loc[high_rated_te_mask, "score"] += 0.09  # Small boost for elite TEs
+    avail.loc[high_rated_te_mask, "score"] += 0.1  # Small boost for elite TEs
 
     for picktype in ["Freshman", "Upside"]:
         if counts.get(picktype, 0) < quotas.get(picktype, 0):
@@ -581,7 +581,7 @@ def draft_pick(
                 if picktype == "Freshman" and not is_5star_skipper(profile):
                     forced = avail_type[avail_type.apply(is_5star_freshman, axis=1)]
                     if not forced.empty:
-                        top_n = forced.sort_values("score", ascending=False).head(5)
+                        top_n = forced.sort_values("score", ascending=False).head(4)
                         pick_row = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else forced.iloc[0]
                         expl = human_explain_pick(
                             manager, pick_row, round_num, profile_type, False, False,
@@ -589,7 +589,7 @@ def draft_pick(
                         )
                         return pick_row, expl
                 # Otherwise, random pick from top 5 scored Freshmen
-                top_n = avail_type.sort_values("score", ascending=False).head(5)
+                top_n = avail_type.sort_values("score", ascending=False).head(4)
                 pick_row = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else avail_type.iloc[0]
                 expl = human_explain_pick(
                     manager, pick_row, round_num, profile_type, False, False,
@@ -601,7 +601,7 @@ def draft_pick(
     if round_num < rtc_lock:
         avail_fu = avail[avail["PickType"].isin(["Freshman", "Upside"])]
         if not avail_fu.empty:
-            top_n = avail_fu.sort_values("score", ascending=False).head(5)
+            top_n = avail_fu.sort_values("score", ascending=False).head(4)
             pick_row = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else avail_fu.iloc[0]
             expl = human_explain_pick(
                 manager, pick_row, round_num, profile_type, outlier=True,
@@ -610,7 +610,7 @@ def draft_pick(
             return pick_row, expl
         avail_rtc = avail[avail["PickType"] == "RTC"]
         if not avail_rtc.empty:
-            top_n = avail_rtc.sort_values("score", ascending=False).head(5)
+            top_n = avail_rtc.sort_values("score", ascending=False).head(4)
             pick_row = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else avail_rtc.iloc[0]
             expl = human_explain_pick(
                 manager, pick_row, round_num, profile_type, outlier=True,
@@ -622,7 +622,7 @@ def draft_pick(
     if counts.get("RTC", 0) < quotas.get("RTC", 0):
         avail_rtc = avail[avail["PickType"] == "RTC"]
         if not avail_rtc.empty:
-            top_n = avail_rtc.sort_values("score", ascending=False).head(5)
+            top_n = avail_rtc.sort_values("score", ascending=False).head(4)
             pick_row = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else avail_rtc.iloc[0]
             expl = human_explain_pick(
                 manager, pick_row, round_num, profile_type, False, False,
@@ -634,7 +634,7 @@ def draft_pick(
     if round_num >= 6 and not any([p["Position"] == "TE" for p in get_manager_drafted_list(manager)]):
         te_candidates = avail[(avail["PickType"]=="Freshman") & (avail["Position"]=="TE")].copy()
         if not te_candidates.empty:
-            top_n = te_candidates.sort_values("score", ascending=False).head(5)
+            top_n = te_candidates.sort_values("score", ascending=False).head(4)
             pick_row = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else te_candidates.iloc[0]
             expl = human_explain_pick(
                 manager, pick_row, round_num, profile_type, True, False,
@@ -643,7 +643,7 @@ def draft_pick(
             return pick_row, expl
 
     # Final fallback: random pick from top 3 overall scored
-    top_n = avail.sort_values("score", ascending=False).head(5)
+    top_n = avail.sort_values("score", ascending=False).head(4)
     pick_row = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else avail.iloc[0]
     expl = human_explain_pick(
         manager, pick_row, round_num, profile_type, outlier=True,
@@ -1174,7 +1174,7 @@ else:
                     avail_top3.loc[:, "score"] = avail_top3["pos_bias"].fillna(0) * 0.08 + avail_top3["college_bias"].fillna(0) * 0.008 + \
                         pd.to_numeric(avail_top3["Rating"], errors="coerce").fillna(0) * 1.0 + \
                         pd.to_numeric(avail_top3["Stars"], errors="coerce").fillna(0) * 0.8
-                    top_n = avail_top3.sort_values("score", ascending=False).head(5)
+                    top_n = avail_top3.sort_values("score", ascending=False).head(4)
                     pick_row_out = top_n.sample(n=1).iloc[0] if len(top_n) > 0 else avail_top3.iloc[0]
                     st.session_state.drafted.add(pick_row_out["NormPlayer"])
                     # update_roster for CPU
